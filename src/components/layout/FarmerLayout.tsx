@@ -5,7 +5,8 @@ import {
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
-const menu = [
+type MenuItem = { to: string; label: string; icon: any; exact?: boolean };
+const menu: MenuItem[] = [
   { to: "/farmer", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/farmer/products", label: "Produk", icon: Package },
   { to: "/farmer/products/add", label: "Tambah Produk", icon: PlusCircle },
@@ -15,7 +16,7 @@ const menu = [
   { to: "/farmer/finance", label: "Keuangan", icon: Wallet },
   { to: "/farmer/waste", label: "Limbah Pertanian", icon: Recycle },
   { to: "/farmer/profile", label: "Profil", icon: UserCircle },
-] as const;
+];
 
 export function FarmerLayout({ children, title }: { children: ReactNode; title: string }) {
   const path = useRouterState({ select: (s) => s.location.pathname });

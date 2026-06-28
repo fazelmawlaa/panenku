@@ -9,38 +9,316 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WasteRouteImport } from './routes/waste'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as ProductsRouteImport } from './routes/products'
+import { Route as OrdersRouteImport } from './routes/orders'
+import { Route as FarmerRouteImport } from './routes/farmer'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as CartRouteImport } from './routes/cart'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProductsIdRouteImport } from './routes/products.$id'
+import { Route as PreOrderIdRouteImport } from './routes/pre-order.$id'
+import { Route as FarmerWasteRouteImport } from './routes/farmer.waste'
+import { Route as FarmerProfileRouteImport } from './routes/farmer.profile'
+import { Route as FarmerProductsRouteImport } from './routes/farmer.products'
+import { Route as FarmerOrdersRouteImport } from './routes/farmer.orders'
+import { Route as FarmerHarvestRouteImport } from './routes/farmer.harvest'
+import { Route as FarmerFinanceRouteImport } from './routes/farmer.finance'
+import { Route as FarmerContractsRouteImport } from './routes/farmer.contracts'
+import { Route as CheckoutIdRouteImport } from './routes/checkout.$id'
+import { Route as FarmerProductsAddRouteImport } from './routes/farmer.products.add'
 
+const WasteRoute = WasteRouteImport.update({
+  id: '/waste',
+  path: '/waste',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProductsRoute = ProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrdersRoute = OrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FarmerRoute = FarmerRouteImport.update({
+  id: '/farmer',
+  path: '/farmer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CartRoute = CartRouteImport.update({
+  id: '/cart',
+  path: '/cart',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProductsIdRoute = ProductsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ProductsRoute,
+} as any)
+const PreOrderIdRoute = PreOrderIdRouteImport.update({
+  id: '/pre-order/$id',
+  path: '/pre-order/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FarmerWasteRoute = FarmerWasteRouteImport.update({
+  id: '/waste',
+  path: '/waste',
+  getParentRoute: () => FarmerRoute,
+} as any)
+const FarmerProfileRoute = FarmerProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => FarmerRoute,
+} as any)
+const FarmerProductsRoute = FarmerProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => FarmerRoute,
+} as any)
+const FarmerOrdersRoute = FarmerOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => FarmerRoute,
+} as any)
+const FarmerHarvestRoute = FarmerHarvestRouteImport.update({
+  id: '/harvest',
+  path: '/harvest',
+  getParentRoute: () => FarmerRoute,
+} as any)
+const FarmerFinanceRoute = FarmerFinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
+  getParentRoute: () => FarmerRoute,
+} as any)
+const FarmerContractsRoute = FarmerContractsRouteImport.update({
+  id: '/contracts',
+  path: '/contracts',
+  getParentRoute: () => FarmerRoute,
+} as any)
+const CheckoutIdRoute = CheckoutIdRouteImport.update({
+  id: '/checkout/$id',
+  path: '/checkout/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FarmerProductsAddRoute = FarmerProductsAddRouteImport.update({
+  id: '/add',
+  path: '/add',
+  getParentRoute: () => FarmerProductsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/cart': typeof CartRoute
+  '/dashboard': typeof DashboardRoute
+  '/farmer': typeof FarmerRouteWithChildren
+  '/orders': typeof OrdersRoute
+  '/products': typeof ProductsRouteWithChildren
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/waste': typeof WasteRoute
+  '/checkout/$id': typeof CheckoutIdRoute
+  '/farmer/contracts': typeof FarmerContractsRoute
+  '/farmer/finance': typeof FarmerFinanceRoute
+  '/farmer/harvest': typeof FarmerHarvestRoute
+  '/farmer/orders': typeof FarmerOrdersRoute
+  '/farmer/products': typeof FarmerProductsRouteWithChildren
+  '/farmer/profile': typeof FarmerProfileRoute
+  '/farmer/waste': typeof FarmerWasteRoute
+  '/pre-order/$id': typeof PreOrderIdRoute
+  '/products/$id': typeof ProductsIdRoute
+  '/farmer/products/add': typeof FarmerProductsAddRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/cart': typeof CartRoute
+  '/dashboard': typeof DashboardRoute
+  '/farmer': typeof FarmerRouteWithChildren
+  '/orders': typeof OrdersRoute
+  '/products': typeof ProductsRouteWithChildren
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/waste': typeof WasteRoute
+  '/checkout/$id': typeof CheckoutIdRoute
+  '/farmer/contracts': typeof FarmerContractsRoute
+  '/farmer/finance': typeof FarmerFinanceRoute
+  '/farmer/harvest': typeof FarmerHarvestRoute
+  '/farmer/orders': typeof FarmerOrdersRoute
+  '/farmer/products': typeof FarmerProductsRouteWithChildren
+  '/farmer/profile': typeof FarmerProfileRoute
+  '/farmer/waste': typeof FarmerWasteRoute
+  '/pre-order/$id': typeof PreOrderIdRoute
+  '/products/$id': typeof ProductsIdRoute
+  '/farmer/products/add': typeof FarmerProductsAddRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/cart': typeof CartRoute
+  '/dashboard': typeof DashboardRoute
+  '/farmer': typeof FarmerRouteWithChildren
+  '/orders': typeof OrdersRoute
+  '/products': typeof ProductsRouteWithChildren
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/waste': typeof WasteRoute
+  '/checkout/$id': typeof CheckoutIdRoute
+  '/farmer/contracts': typeof FarmerContractsRoute
+  '/farmer/finance': typeof FarmerFinanceRoute
+  '/farmer/harvest': typeof FarmerHarvestRoute
+  '/farmer/orders': typeof FarmerOrdersRoute
+  '/farmer/products': typeof FarmerProductsRouteWithChildren
+  '/farmer/profile': typeof FarmerProfileRoute
+  '/farmer/waste': typeof FarmerWasteRoute
+  '/pre-order/$id': typeof PreOrderIdRoute
+  '/products/$id': typeof ProductsIdRoute
+  '/farmer/products/add': typeof FarmerProductsAddRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/cart'
+    | '/dashboard'
+    | '/farmer'
+    | '/orders'
+    | '/products'
+    | '/sitemap.xml'
+    | '/waste'
+    | '/checkout/$id'
+    | '/farmer/contracts'
+    | '/farmer/finance'
+    | '/farmer/harvest'
+    | '/farmer/orders'
+    | '/farmer/products'
+    | '/farmer/profile'
+    | '/farmer/waste'
+    | '/pre-order/$id'
+    | '/products/$id'
+    | '/farmer/products/add'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/cart'
+    | '/dashboard'
+    | '/farmer'
+    | '/orders'
+    | '/products'
+    | '/sitemap.xml'
+    | '/waste'
+    | '/checkout/$id'
+    | '/farmer/contracts'
+    | '/farmer/finance'
+    | '/farmer/harvest'
+    | '/farmer/orders'
+    | '/farmer/products'
+    | '/farmer/profile'
+    | '/farmer/waste'
+    | '/pre-order/$id'
+    | '/products/$id'
+    | '/farmer/products/add'
+  id:
+    | '__root__'
+    | '/'
+    | '/cart'
+    | '/dashboard'
+    | '/farmer'
+    | '/orders'
+    | '/products'
+    | '/sitemap.xml'
+    | '/waste'
+    | '/checkout/$id'
+    | '/farmer/contracts'
+    | '/farmer/finance'
+    | '/farmer/harvest'
+    | '/farmer/orders'
+    | '/farmer/products'
+    | '/farmer/profile'
+    | '/farmer/waste'
+    | '/pre-order/$id'
+    | '/products/$id'
+    | '/farmer/products/add'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CartRoute: typeof CartRoute
+  DashboardRoute: typeof DashboardRoute
+  FarmerRoute: typeof FarmerRouteWithChildren
+  OrdersRoute: typeof OrdersRoute
+  ProductsRoute: typeof ProductsRouteWithChildren
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  WasteRoute: typeof WasteRoute
+  CheckoutIdRoute: typeof CheckoutIdRoute
+  PreOrderIdRoute: typeof PreOrderIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/waste': {
+      id: '/waste'
+      path: '/waste'
+      fullPath: '/waste'
+      preLoaderRoute: typeof WasteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/products': {
+      id: '/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof ProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/orders': {
+      id: '/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof OrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/farmer': {
+      id: '/farmer'
+      path: '/farmer'
+      fullPath: '/farmer'
+      preLoaderRoute: typeof FarmerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cart': {
+      id: '/cart'
+      path: '/cart'
+      fullPath: '/cart'
+      preLoaderRoute: typeof CartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +326,145 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/products/$id': {
+      id: '/products/$id'
+      path: '/$id'
+      fullPath: '/products/$id'
+      preLoaderRoute: typeof ProductsIdRouteImport
+      parentRoute: typeof ProductsRoute
+    }
+    '/pre-order/$id': {
+      id: '/pre-order/$id'
+      path: '/pre-order/$id'
+      fullPath: '/pre-order/$id'
+      preLoaderRoute: typeof PreOrderIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/farmer/waste': {
+      id: '/farmer/waste'
+      path: '/waste'
+      fullPath: '/farmer/waste'
+      preLoaderRoute: typeof FarmerWasteRouteImport
+      parentRoute: typeof FarmerRoute
+    }
+    '/farmer/profile': {
+      id: '/farmer/profile'
+      path: '/profile'
+      fullPath: '/farmer/profile'
+      preLoaderRoute: typeof FarmerProfileRouteImport
+      parentRoute: typeof FarmerRoute
+    }
+    '/farmer/products': {
+      id: '/farmer/products'
+      path: '/products'
+      fullPath: '/farmer/products'
+      preLoaderRoute: typeof FarmerProductsRouteImport
+      parentRoute: typeof FarmerRoute
+    }
+    '/farmer/orders': {
+      id: '/farmer/orders'
+      path: '/orders'
+      fullPath: '/farmer/orders'
+      preLoaderRoute: typeof FarmerOrdersRouteImport
+      parentRoute: typeof FarmerRoute
+    }
+    '/farmer/harvest': {
+      id: '/farmer/harvest'
+      path: '/harvest'
+      fullPath: '/farmer/harvest'
+      preLoaderRoute: typeof FarmerHarvestRouteImport
+      parentRoute: typeof FarmerRoute
+    }
+    '/farmer/finance': {
+      id: '/farmer/finance'
+      path: '/finance'
+      fullPath: '/farmer/finance'
+      preLoaderRoute: typeof FarmerFinanceRouteImport
+      parentRoute: typeof FarmerRoute
+    }
+    '/farmer/contracts': {
+      id: '/farmer/contracts'
+      path: '/contracts'
+      fullPath: '/farmer/contracts'
+      preLoaderRoute: typeof FarmerContractsRouteImport
+      parentRoute: typeof FarmerRoute
+    }
+    '/checkout/$id': {
+      id: '/checkout/$id'
+      path: '/checkout/$id'
+      fullPath: '/checkout/$id'
+      preLoaderRoute: typeof CheckoutIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/farmer/products/add': {
+      id: '/farmer/products/add'
+      path: '/add'
+      fullPath: '/farmer/products/add'
+      preLoaderRoute: typeof FarmerProductsAddRouteImport
+      parentRoute: typeof FarmerProductsRoute
+    }
   }
 }
 
+interface FarmerProductsRouteChildren {
+  FarmerProductsAddRoute: typeof FarmerProductsAddRoute
+}
+
+const FarmerProductsRouteChildren: FarmerProductsRouteChildren = {
+  FarmerProductsAddRoute: FarmerProductsAddRoute,
+}
+
+const FarmerProductsRouteWithChildren = FarmerProductsRoute._addFileChildren(
+  FarmerProductsRouteChildren,
+)
+
+interface FarmerRouteChildren {
+  FarmerContractsRoute: typeof FarmerContractsRoute
+  FarmerFinanceRoute: typeof FarmerFinanceRoute
+  FarmerHarvestRoute: typeof FarmerHarvestRoute
+  FarmerOrdersRoute: typeof FarmerOrdersRoute
+  FarmerProductsRoute: typeof FarmerProductsRouteWithChildren
+  FarmerProfileRoute: typeof FarmerProfileRoute
+  FarmerWasteRoute: typeof FarmerWasteRoute
+}
+
+const FarmerRouteChildren: FarmerRouteChildren = {
+  FarmerContractsRoute: FarmerContractsRoute,
+  FarmerFinanceRoute: FarmerFinanceRoute,
+  FarmerHarvestRoute: FarmerHarvestRoute,
+  FarmerOrdersRoute: FarmerOrdersRoute,
+  FarmerProductsRoute: FarmerProductsRouteWithChildren,
+  FarmerProfileRoute: FarmerProfileRoute,
+  FarmerWasteRoute: FarmerWasteRoute,
+}
+
+const FarmerRouteWithChildren =
+  FarmerRoute._addFileChildren(FarmerRouteChildren)
+
+interface ProductsRouteChildren {
+  ProductsIdRoute: typeof ProductsIdRoute
+}
+
+const ProductsRouteChildren: ProductsRouteChildren = {
+  ProductsIdRoute: ProductsIdRoute,
+}
+
+const ProductsRouteWithChildren = ProductsRoute._addFileChildren(
+  ProductsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CartRoute: CartRoute,
+  DashboardRoute: DashboardRoute,
+  FarmerRoute: FarmerRouteWithChildren,
+  OrdersRoute: OrdersRoute,
+  ProductsRoute: ProductsRouteWithChildren,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
+  WasteRoute: WasteRoute,
+  CheckoutIdRoute: CheckoutIdRoute,
+  PreOrderIdRoute: PreOrderIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
