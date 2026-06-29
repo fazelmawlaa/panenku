@@ -21,8 +21,18 @@ const menu: MenuItem[] = [
 ];
 
 export function FarmerLayout({ children, title }: { children: ReactNode; title: string }) {
+  return (
+    <RequireRole role="petani">
+      <FarmerLayoutInner title={title}>{children}</FarmerLayoutInner>
+    </RequireRole>
+  );
+}
+
+function FarmerLayoutInner({ children, title }: { children: ReactNode; title: string }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
+  const { profile, user, signOut } = useAuth();
+  const displayName = profile?.full_name || user?.email?.split("@")[0] || "Petani";
 
   return (
     <div className="min-h-screen flex bg-secondary/30">
@@ -63,9 +73,23 @@ export function FarmerLayout({ children, title }: { children: ReactNode; title: 
             })}
           </nav>
 
-          <Link to="/" className="m-3 flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted">
-            <ArrowLeft className="h-4 w-4" /> Kembali ke Beranda
-          </Link>
+          <div className="m-3 space-y-1">
+            <div className="rounded-xl border border-border/60 p-3 flex items-center gap-3">
+              <div className="grid h-9 w-9 place-items-center rounded-xl gradient-leaf text-white font-bold text-sm shrink-0">
+                {displayName.charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium truncate">{displayName}</div>
+                <div className="text-[11px] text-muted-foreground truncate">{user?.email}</div>
+              </div>
+            </div>
+            <button onClick={signOut} className="w-full flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-destructive hover:bg-destructive/10">
+              <LogOut className="h-4 w-4" /> Keluar
+            </button>
+            <Link to="/" className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted">
+              <ArrowLeft className="h-4 w-4" /> Kembali ke Beranda
+            </Link>
+          </div>
         </div>
       </aside>
 
