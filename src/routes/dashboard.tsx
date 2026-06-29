@@ -3,13 +3,22 @@ import { CustomerLayout } from "@/components/layout/CustomerLayout";
 import { customerOrders, products, farmers, formatRupiah } from "@/lib/mock-data";
 import { ShoppingBag, Wallet, Heart, TrendingUp, ArrowRight, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { RequireRole } from "@/components/RequireRole";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — PANENKU" }] }),
-  component: Dashboard,
+  component: () => (
+    <RequireRole role="customer">
+      <Dashboard />
+    </RequireRole>
+  ),
 });
 
 function Dashboard() {
+  const { profile, user } = useAuth();
+  const displayName = profile?.full_name || user?.email?.split("@")[0] || "Pengguna";
+  const initial = displayName.charAt(0).toUpperCase();
   const recs = products.slice(0, 4);
   return (
     <CustomerLayout>
@@ -17,11 +26,12 @@ function Dashboard() {
         <div className="glass-card rounded-3xl p-6 sm:p-8 flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="text-sm text-muted-foreground">Selamat datang kembali,</div>
-            <h1 className="font-display text-3xl font-bold">Andi Pratama 👋</h1>
+            <h1 className="font-display text-3xl font-bold">{displayName} 👋</h1>
             <p className="text-sm text-muted-foreground mt-1">Pantau pesanan, simpanan, dan rekomendasi panen Anda.</p>
           </div>
-          <div className="grid h-14 w-14 place-items-center rounded-2xl gradient-leaf text-white font-display font-bold text-2xl shrink-0">A</div>
+          <div className="grid h-14 w-14 place-items-center rounded-2xl gradient-leaf text-white font-display font-bold text-2xl shrink-0">{initial}</div>
         </div>
+
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard icon={ShoppingBag} label="Pesanan Aktif" value="4" sub="2 sedang panen" />
