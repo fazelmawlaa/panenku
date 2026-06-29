@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { CustomerLayout } from "@/components/layout/CustomerLayout";
 import { customerOrders, formatRupiah, orderStatuses } from "@/lib/mock-data";
@@ -65,7 +65,9 @@ function Orders() {
                 </div>
 
                 <div className="flex gap-2 pt-3 border-t border-border/60 mt-3">
-                  <Button variant="outline" size="sm" className="rounded-full"><Package className="h-3.5 w-3.5 mr-1" /> Lacak</Button>
+                  <Link to="/orders/$orderId" params={{ orderId: o.id }}>
+                    <Button variant="outline" size="sm" className="rounded-full"><Package className="h-3.5 w-3.5 mr-1" /> Lacak</Button>
+                  </Link>
                   <Button variant="outline" size="sm" className="rounded-full">Chat Petani</Button>
                   {o.status === "Selesai" && <Button size="sm" className="rounded-full ml-auto">Beri Ulasan</Button>}
                 </div>
