@@ -1,7 +1,12 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ShoppingCart, Sprout, User, Search, Menu, X } from "lucide-react";
+import { ShoppingCart, Sprout, User, Search, Menu, X, LogOut, LayoutDashboard } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
+  DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 const nav = [
   { to: "/", label: "Beranda" },
