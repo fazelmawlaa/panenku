@@ -1,7 +1,12 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ShoppingCart, Sprout, User, Search, Menu, X } from "lucide-react";
+import { ShoppingCart, Sprout, User, Search, Menu, X, LogOut, LayoutDashboard } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
+  DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 const nav = [
   { to: "/", label: "Beranda" },
@@ -14,6 +19,10 @@ const nav = [
 export function CustomerLayout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const { session, role, profile, user, signOut } = useAuth();
+  const displayName = profile?.full_name || user?.email?.split("@")[0] || "Akun";
+  const initial = displayName.charAt(0).toUpperCase();
+
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -54,11 +63,37 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
               <ShoppingCart className="h-4 w-4" />
               <span className="absolute -top-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-honey text-[10px] font-bold text-foreground">3</span>
             </Link>
-            <Link to="/dashboard">
-              <Button size="sm" className="rounded-full gap-2">
-                <User className="h-4 w-4" /> Masuk
-              </Button>
-            </Link>
+            {session ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="grid h-10 w-10 place-items-center rounded-full gradient-leaf text-white text-sm font-bold shadow-soft">
+                    {initial}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="flex flex-col gap-0.5">
+                    <span className="font-semibold truncate">{displayName}</span>
+                    <span className="text-xs font-normal text-muted-foreground truncate">{user?.email}</span>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to={role === "petani" ? "/farmer" : "/dashboard"} className="gap-2 cursor-pointer">
+                      <LayoutDashboard className="h-4 w-4" /> {role === "petani" ? "Dashboard Petani" : "Dashboard"}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut} className="gap-2 cursor-pointer text-destructive focus:text-destructive">
+                    <LogOut className="h-4 w-4" /> Keluar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link to="/auth">
+                <Button size="sm" className="rounded-full gap-2">
+                  <User className="h-4 w-4" /> Masuk
+                </Button>
+              </Link>
+            )}
           </div>
 
           <button onClick={() => setOpen(!open)} className="lg:hidden grid h-10 w-10 place-items-center rounded-full hover:bg-muted">
