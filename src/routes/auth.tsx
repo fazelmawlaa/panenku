@@ -206,19 +206,18 @@ function AuthPage() {
   );
 }
 
-function Field({ id, label, icon: Icon, children }: { id: string; label: string; icon: any; children: ReactNodeChildren }) {
+function Field({ id, label, icon: Icon, children }: { id: string; label: string; icon: any; children: React.ReactNode }) {
   return (
     <div>
       <Label htmlFor={id} className="text-sm font-medium mb-1.5 block">{label}</Label>
       <div className="relative">
-        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
         <div className="[&_input]:pl-9">{children}</div>
       </div>
     </div>
   );
 }
 
-type ReactNodeChildren = React.ReactNode;
 
 function RoleChip({ selected, onClick, label, emoji, desc }: { selected: boolean; onClick: () => void; label: string; emoji: string; desc: string }) {
   return (
