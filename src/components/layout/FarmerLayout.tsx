@@ -1,9 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Package, PlusCircle, CalendarDays, ClipboardList,
-  FileSignature, Wallet, Recycle, UserCircle, Sprout, ArrowLeft, Menu, X,
+  FileSignature, Wallet, Recycle, UserCircle, Sprout, ArrowLeft, Menu, X, LogOut,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { RequireRole } from "@/components/RequireRole";
+import { useAuth } from "@/hooks/use-auth";
 
 type MenuItem = { to: string; label: string; icon: any; exact?: boolean };
 const menu: MenuItem[] = [
