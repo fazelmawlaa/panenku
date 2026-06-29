@@ -182,5 +182,22 @@ export const salesData = [
 
 export const orderStatuses = ["Menunggu", "Dibayar", "Diproses", "Sedang Panen", "Pengiriman", "Selesai"];
 
+export const shippingMethods = [
+  { id: "regular", name: "Reguler", courier: "JNE REG", eta: "3-5 hari", price: 18000, desc: "Pengiriman standar, paling hemat" },
+  { id: "express", name: "Express", courier: "SiCepat BEST", eta: "1-2 hari", price: 32000, desc: "Cepat sampai, cocok untuk produk segar" },
+  { id: "sameday", name: "Same Day", courier: "GoSend Instant", eta: "Hari ini", price: 45000, desc: "Tersedia untuk area dalam kota" },
+  { id: "cargo", name: "Kargo", courier: "Lion Parcel JAGOPACK", eta: "5-7 hari", price: 12000, desc: "Untuk pesanan jumlah besar (>50kg)" },
+] as const;
+
+export const trackingEvents = [
+  { time: "Senin, 24 Jun · 08:15", status: "Pesanan dibuat", desc: "Pesanan telah diterima sistem PANENKU", done: true },
+  { time: "Senin, 24 Jun · 09:42", status: "Pembayaran dikonfirmasi", desc: "Pembayaran berhasil melalui GoPay", done: true },
+  { time: "Senin, 24 Jun · 14:20", status: "Pesanan diproses petani", desc: "Pak Sugeng menyiapkan pesanan Anda", done: true },
+  { time: "Selasa, 25 Jun · 07:30", status: "Paket diserahkan ke kurir", desc: "JNE REG · resi JN0024801XK", done: true },
+  { time: "Selasa, 25 Jun · 11:05", status: "Dalam perjalanan", desc: "Tiba di gudang sortir Bandung", done: true },
+  { time: "Rabu, 26 Jun · estimasi 14:00", status: "Tiba di tujuan", desc: "Jakarta Pusat", done: false },
+  { time: "—", status: "Diterima penerima", desc: "Konfirmasi penerimaan", done: false },
+];
+
 export const formatRupiah = (n: number) =>
   "Rp" + n.toLocaleString("id-ID");
