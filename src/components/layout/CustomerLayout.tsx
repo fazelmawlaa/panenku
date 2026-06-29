@@ -19,6 +19,10 @@ const nav = [
 export function CustomerLayout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const { session, role, profile, user, signOut } = useAuth();
+  const displayName = profile?.full_name || user?.email?.split("@")[0] || "Akun";
+  const initial = displayName.charAt(0).toUpperCase();
+
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
