@@ -1,9 +1,21 @@
+<<<<<<< HEAD
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { ShoppingCart, User, Search, Menu, X, LogOut } from "lucide-react";
 import logoPanenku from "@/assets/logo_panenku.png";
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
+=======
+import { Link, useRouterState } from "@tanstack/react-router";
+import { ShoppingCart, Sprout, User, Search, Menu, X, LogOut, LayoutDashboard } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
+  DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+>>>>>>> 1fc4c8c6e2c496da55c449d48f785ee9053f9c3b
 
 const nav = [
   { to: "/", label: "Beranda" },
@@ -16,6 +28,7 @@ const nav = [
 export function CustomerLayout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const path = useRouterState({ select: (s) => s.location.pathname });
+<<<<<<< HEAD
   const { user, isLoggedIn, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -28,6 +41,12 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
   const activeNav = isLoggedIn && user?.role === "customer"
     ? nav.filter((n) => n.to !== "/farmer")
     : nav;
+=======
+  const { session, role, profile, user, signOut } = useAuth();
+  const displayName = profile?.full_name || user?.email?.split("@")[0] || "Akun";
+  const initial = displayName.charAt(0).toUpperCase();
+
+>>>>>>> 1fc4c8c6e2c496da55c449d48f785ee9053f9c3b
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f4f5f1] font-['Inter',sans-serif]">
@@ -66,6 +85,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
               <ShoppingCart className="h-4 w-4" />
               <span className="absolute -top-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-honey text-[10px] font-bold text-foreground">3</span>
             </Link>
+<<<<<<< HEAD
 
             {isLoggedIn && user ? (
               <div className="flex items-center gap-2 ml-1">
@@ -86,6 +106,34 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
               </div>
             ) : (
               <Link to="/login">
+=======
+            {session ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="grid h-10 w-10 place-items-center rounded-full gradient-leaf text-white text-sm font-bold shadow-soft">
+                    {initial}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="flex flex-col gap-0.5">
+                    <span className="font-semibold truncate">{displayName}</span>
+                    <span className="text-xs font-normal text-muted-foreground truncate">{user?.email}</span>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to={role === "petani" ? "/farmer" : "/dashboard"} className="gap-2 cursor-pointer">
+                      <LayoutDashboard className="h-4 w-4" /> {role === "petani" ? "Dashboard Petani" : "Dashboard"}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut} className="gap-2 cursor-pointer text-destructive focus:text-destructive">
+                    <LogOut className="h-4 w-4" /> Keluar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link to="/auth">
+>>>>>>> 1fc4c8c6e2c496da55c449d48f785ee9053f9c3b
                 <Button size="sm" className="rounded-full gap-2">
                   <User className="h-4 w-4" /> Masuk
                 </Button>

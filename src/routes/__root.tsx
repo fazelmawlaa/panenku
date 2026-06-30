@@ -127,6 +127,7 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+<<<<<<< HEAD
 function AuthGuard({ children }: { children: ReactNode }) {
   const { isLoggedIn, isLoading, user } = useAuth();
   const navigate = useNavigate();
@@ -173,15 +174,22 @@ function AuthGuard({ children }: { children: ReactNode }) {
 
   return <>{children}</>;
 }
+=======
+import { AuthProvider } from "@/hooks/use-auth";
+>>>>>>> 1fc4c8c6e2c496da55c449d48f785ee9053f9c3b
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+<<<<<<< HEAD
         <AuthGuard>
           <Outlet />
         </AuthGuard>
+=======
+        <Outlet />
+>>>>>>> 1fc4c8c6e2c496da55c449d48f785ee9053f9c3b
         <Toaster />
       </AuthProvider>
     </QueryClientProvider>

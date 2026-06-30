@@ -18,9 +18,11 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as FarmerRouteImport } from './routes/farmer'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CartRouteImport } from './routes/cart'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProductsIdRouteImport } from './routes/products.$id'
 import { Route as PreOrderIdRouteImport } from './routes/pre-order.$id'
+import { Route as OrdersOrderIdRouteImport } from './routes/orders.$orderId'
 import { Route as FarmerWasteRouteImport } from './routes/farmer.waste'
 import { Route as FarmerProfileRouteImport } from './routes/farmer.profile'
 import { Route as FarmerProductsRouteImport } from './routes/farmer.products'
@@ -76,6 +78,11 @@ const CartRoute = CartRouteImport.update({
   path: '/cart',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -90,6 +97,11 @@ const PreOrderIdRoute = PreOrderIdRouteImport.update({
   id: '/pre-order/$id',
   path: '/pre-order/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const OrdersOrderIdRoute = OrdersOrderIdRouteImport.update({
+  id: '/$orderId',
+  path: '/$orderId',
+  getParentRoute: () => OrdersRoute,
 } as any)
 const FarmerWasteRoute = FarmerWasteRouteImport.update({
   id: '/waste',
@@ -139,12 +151,17 @@ const FarmerProductsAddRoute = FarmerProductsAddRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/dashboard': typeof DashboardRoute
   '/farmer': typeof FarmerRouteWithChildren
+<<<<<<< HEAD
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/orders': typeof OrdersRoute
+=======
+  '/orders': typeof OrdersRouteWithChildren
+>>>>>>> 1fc4c8c6e2c496da55c449d48f785ee9053f9c3b
   '/products': typeof ProductsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/waste': typeof WasteRoute
@@ -156,18 +173,24 @@ export interface FileRoutesByFullPath {
   '/farmer/products': typeof FarmerProductsRouteWithChildren
   '/farmer/profile': typeof FarmerProfileRoute
   '/farmer/waste': typeof FarmerWasteRoute
+  '/orders/$orderId': typeof OrdersOrderIdRoute
   '/pre-order/$id': typeof PreOrderIdRoute
   '/products/$id': typeof ProductsIdRoute
   '/farmer/products/add': typeof FarmerProductsAddRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/dashboard': typeof DashboardRoute
   '/farmer': typeof FarmerRouteWithChildren
+<<<<<<< HEAD
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/orders': typeof OrdersRoute
+=======
+  '/orders': typeof OrdersRouteWithChildren
+>>>>>>> 1fc4c8c6e2c496da55c449d48f785ee9053f9c3b
   '/products': typeof ProductsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/waste': typeof WasteRoute
@@ -179,6 +202,7 @@ export interface FileRoutesByTo {
   '/farmer/products': typeof FarmerProductsRouteWithChildren
   '/farmer/profile': typeof FarmerProfileRoute
   '/farmer/waste': typeof FarmerWasteRoute
+  '/orders/$orderId': typeof OrdersOrderIdRoute
   '/pre-order/$id': typeof PreOrderIdRoute
   '/products/$id': typeof ProductsIdRoute
   '/farmer/products/add': typeof FarmerProductsAddRoute
@@ -186,12 +210,17 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/cart': typeof CartRoute
   '/dashboard': typeof DashboardRoute
   '/farmer': typeof FarmerRouteWithChildren
+<<<<<<< HEAD
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/orders': typeof OrdersRoute
+=======
+  '/orders': typeof OrdersRouteWithChildren
+>>>>>>> 1fc4c8c6e2c496da55c449d48f785ee9053f9c3b
   '/products': typeof ProductsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/waste': typeof WasteRoute
@@ -203,6 +232,7 @@ export interface FileRoutesById {
   '/farmer/products': typeof FarmerProductsRouteWithChildren
   '/farmer/profile': typeof FarmerProfileRoute
   '/farmer/waste': typeof FarmerWasteRoute
+  '/orders/$orderId': typeof OrdersOrderIdRoute
   '/pre-order/$id': typeof PreOrderIdRoute
   '/products/$id': typeof ProductsIdRoute
   '/farmer/products/add': typeof FarmerProductsAddRoute
@@ -211,6 +241,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/cart'
     | '/dashboard'
     | '/farmer'
@@ -228,12 +259,14 @@ export interface FileRouteTypes {
     | '/farmer/products'
     | '/farmer/profile'
     | '/farmer/waste'
+    | '/orders/$orderId'
     | '/pre-order/$id'
     | '/products/$id'
     | '/farmer/products/add'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
     | '/cart'
     | '/dashboard'
     | '/farmer'
@@ -251,12 +284,14 @@ export interface FileRouteTypes {
     | '/farmer/products'
     | '/farmer/profile'
     | '/farmer/waste'
+    | '/orders/$orderId'
     | '/pre-order/$id'
     | '/products/$id'
     | '/farmer/products/add'
   id:
     | '__root__'
     | '/'
+    | '/auth'
     | '/cart'
     | '/dashboard'
     | '/farmer'
@@ -274,6 +309,7 @@ export interface FileRouteTypes {
     | '/farmer/products'
     | '/farmer/profile'
     | '/farmer/waste'
+    | '/orders/$orderId'
     | '/pre-order/$id'
     | '/products/$id'
     | '/farmer/products/add'
@@ -281,12 +317,17 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
   CartRoute: typeof CartRoute
   DashboardRoute: typeof DashboardRoute
   FarmerRoute: typeof FarmerRouteWithChildren
+<<<<<<< HEAD
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   OrdersRoute: typeof OrdersRoute
+=======
+  OrdersRoute: typeof OrdersRouteWithChildren
+>>>>>>> 1fc4c8c6e2c496da55c449d48f785ee9053f9c3b
   ProductsRoute: typeof ProductsRouteWithChildren
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   WasteRoute: typeof WasteRoute
@@ -359,6 +400,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CartRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -379,6 +427,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/pre-order/$id'
       preLoaderRoute: typeof PreOrderIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/orders/$orderId': {
+      id: '/orders/$orderId'
+      path: '/$orderId'
+      fullPath: '/orders/$orderId'
+      preLoaderRoute: typeof OrdersOrderIdRouteImport
+      parentRoute: typeof OrdersRoute
     }
     '/farmer/waste': {
       id: '/farmer/waste'
@@ -481,6 +536,17 @@ const FarmerRouteChildren: FarmerRouteChildren = {
 const FarmerRouteWithChildren =
   FarmerRoute._addFileChildren(FarmerRouteChildren)
 
+interface OrdersRouteChildren {
+  OrdersOrderIdRoute: typeof OrdersOrderIdRoute
+}
+
+const OrdersRouteChildren: OrdersRouteChildren = {
+  OrdersOrderIdRoute: OrdersOrderIdRoute,
+}
+
+const OrdersRouteWithChildren =
+  OrdersRoute._addFileChildren(OrdersRouteChildren)
+
 interface ProductsRouteChildren {
   ProductsIdRoute: typeof ProductsIdRoute
 }
@@ -495,12 +561,17 @@ const ProductsRouteWithChildren = ProductsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
   CartRoute: CartRoute,
   DashboardRoute: DashboardRoute,
   FarmerRoute: FarmerRouteWithChildren,
+<<<<<<< HEAD
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   OrdersRoute: OrdersRoute,
+=======
+  OrdersRoute: OrdersRouteWithChildren,
+>>>>>>> 1fc4c8c6e2c496da55c449d48f785ee9053f9c3b
   ProductsRoute: ProductsRouteWithChildren,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   WasteRoute: WasteRoute,

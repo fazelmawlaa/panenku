@@ -3,16 +3,31 @@ import { CustomerLayout } from "@/components/layout/CustomerLayout";
 import { customerOrders, products, farmers, formatRupiah } from "@/lib/mock-data";
 import { ShoppingBag, Wallet, Heart, TrendingUp, ArrowRight, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { RequireRole } from "@/components/RequireRole";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/dashboard")({
+<<<<<<< HEAD
   head: () => ({ meta: [{ title: "Dashboard Pembeli — PANENKU+" }] }),
   component: Dashboard,
+=======
+  head: () => ({ meta: [{ title: "Dashboard — PANENKU" }] }),
+  component: () => (
+    <RequireRole role="customer">
+      <Dashboard />
+    </RequireRole>
+  ),
+>>>>>>> 1fc4c8c6e2c496da55c449d48f785ee9053f9c3b
 });
 
 function Dashboard() {
+  const { profile, user } = useAuth();
+  const displayName = profile?.full_name || user?.email?.split("@")[0] || "Pengguna";
+  const initial = displayName.charAt(0).toUpperCase();
   const recs = products.slice(0, 4);
   return (
     <CustomerLayout>
+<<<<<<< HEAD
       <div className="min-h-screen bg-[#f4f5f1] text-[#1a2b1b] py-8 px-4 sm:px-6 lg:px-8 font-['Inter',sans-serif] relative overflow-hidden">
         
         {/* DEKORASI BACKGROUND TIPIS (BACKGROUND PATTERNS & BLOBS) */}
@@ -30,6 +45,31 @@ function Dashboard() {
                 Andi Pratama <span className="font-['Playfair_Display',serif] italic font-light text-primary">👋</span>
               </h1>
               <p className="text-sm text-muted-foreground font-light mt-1.5">Pantau pesanan, penghematan pre-order, dan rekomendasi panen Anda.</p>
+=======
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8 space-y-6">
+        <div className="glass-card rounded-3xl p-6 sm:p-8 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="text-sm text-muted-foreground">Selamat datang kembali,</div>
+            <h1 className="font-display text-3xl font-bold">{displayName} 👋</h1>
+            <p className="text-sm text-muted-foreground mt-1">Pantau pesanan, simpanan, dan rekomendasi panen Anda.</p>
+          </div>
+          <div className="grid h-14 w-14 place-items-center rounded-2xl gradient-leaf text-white font-display font-bold text-2xl shrink-0">{initial}</div>
+        </div>
+
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard icon={ShoppingBag} label="Pesanan Aktif" value="4" sub="2 sedang panen" />
+          <StatCard icon={Wallet} label="Penghematan" value={formatRupiah(285000)} sub="+12% bulan ini" />
+          <StatCard icon={Heart} label="Petani Favorit" value="8" sub="3 baru" />
+          <StatCard icon={TrendingUp} label="Total Transaksi" value="42" sub="sejak Jan 2026" />
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 glass-card rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display font-bold text-lg">Transaksi Terbaru</h2>
+              <Link to="/orders" className="text-sm text-primary hover:underline flex items-center gap-1">Lihat semua <ArrowRight className="h-3 w-3" /></Link>
+>>>>>>> 1fc4c8c6e2c496da55c449d48f785ee9053f9c3b
             </div>
             <div className="grid h-16 w-16 place-items-center rounded-2xl bg-primary text-white font-['Plus_Jakarta_Sans',sans-serif] font-black text-2xl shrink-0 shadow-md">
               A
