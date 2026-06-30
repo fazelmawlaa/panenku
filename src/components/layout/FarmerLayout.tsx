@@ -1,9 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Package, PlusCircle, CalendarDays, ClipboardList,
-  FileSignature, Wallet, Recycle, UserCircle, Sprout, ArrowLeft, Menu, X,
+  FileSignature, Wallet, Recycle, UserCircle, ArrowLeft, Menu, X,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
+import logoPanenku from "@/assets/logo_panenku.png";
 
 type MenuItem = { to: string; label: string; icon: any; exact?: boolean };
 const menu: MenuItem[] = [
@@ -23,25 +24,26 @@ export function FarmerLayout({ children, title }: { children: ReactNode; title: 
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex bg-secondary/30">
+    <div className="min-h-screen flex bg-[#f4f5f1] font-['Inter',sans-serif] relative overflow-hidden">
+      {/* DEKORASI BACKGROUND TIPIS (BACKGROUND PATTERNS & BLOBS) */}
+      <div className="absolute inset-0 opacity-[0.015] pointer-events-none" style={{ backgroundImage: "radial-gradient(#1a2b1b 1.5px, transparent 1.5px)", backgroundSize: "28px 28px" }} />
+
       {/* Sidebar */}
       <aside
-        className={`fixed lg:sticky top-0 z-40 h-screen w-72 shrink-0 border-r border-border/50 bg-background transition-transform ${
+        className={`fixed lg:sticky top-0 z-40 h-screen w-72 shrink-0 border-r border-border/40 bg-white transition-transform duration-300 relative z-20 ${
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
         <div className="flex h-full flex-col">
-          <Link to="/" className="flex items-center gap-2 px-6 py-5 border-b border-border/50">
-            <div className="grid h-9 w-9 place-items-center rounded-xl gradient-leaf shadow-soft">
-              <Sprout className="h-5 w-5 text-white" />
-            </div>
-            <div className="leading-tight">
-              <div className="font-display font-bold">PANENKU</div>
-              <div className="text-[10px] text-muted-foreground -mt-0.5">Dashboard Petani</div>
+          <Link to="/" className="flex items-center gap-3 px-6 py-5 border-b border-border/40">
+            <img src={logoPanenku} alt="PANENKU+ Logo" className="h-10 w-10 rounded-xl object-contain bg-muted p-1" />
+            <div className="leading-tight text-left">
+              <div className="font-['Plus_Jakarta_Sans',sans-serif] text-lg font-black tracking-tight text-primary">PANENKU+</div>
+              <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider -mt-0.5">Dashboard Petani</div>
             </div>
           </Link>
 
-          <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+          <nav className="flex-1 overflow-y-auto p-4 space-y-1.5">
             {menu.map((m) => {
               const active = m.exact ? path === m.to : path === m.to || path.startsWith(m.to + "/");
               const Icon = m.icon;
@@ -50,8 +52,8 @@ export function FarmerLayout({ children, title }: { children: ReactNode; title: 
                   key={m.to}
                   to={m.to}
                   onClick={() => setOpen(false)}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                    active ? "bg-primary text-primary-foreground shadow-soft" : "text-foreground/70 hover:bg-muted hover:text-foreground"
+                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs uppercase tracking-wider font-bold transition duration-200 ${
+                    active ? "bg-primary text-white shadow-soft" : "text-foreground/75 hover:bg-secondary hover:text-foreground"
                   }`}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
@@ -61,7 +63,7 @@ export function FarmerLayout({ children, title }: { children: ReactNode; title: 
             })}
           </nav>
 
-          <Link to="/" className="m-3 flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted">
+          <Link to="/" className="m-4 flex items-center gap-2 rounded-xl px-4 py-3 text-xs uppercase tracking-wider font-bold text-muted-foreground hover:bg-secondary transition">
             <ArrowLeft className="h-4 w-4" /> Kembali ke Beranda
           </Link>
         </div>
@@ -70,14 +72,14 @@ export function FarmerLayout({ children, title }: { children: ReactNode; title: 
       {open && <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={() => setOpen(false)} />}
 
       {/* Main */}
-      <div className="flex-1 min-w-0">
-        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border/40 bg-background/80 backdrop-blur-xl px-4 sm:px-8 py-4">
-          <button onClick={() => setOpen(true)} className="lg:hidden grid h-9 w-9 place-items-center rounded-lg hover:bg-muted">
+      <div className="flex-1 min-w-0 flex flex-col relative z-10">
+        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border/40 bg-[#f4f5f1]/80 backdrop-blur-xl px-4 sm:px-8 py-4">
+          <button onClick={() => setOpen(true)} className="lg:hidden grid h-9 w-9 place-items-center rounded-lg hover:bg-muted text-foreground">
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
-          <h1 className="font-display text-xl font-bold truncate">{title}</h1>
+          <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-xl font-black text-foreground tracking-tight truncate">{title}</h1>
         </header>
-        <div className="p-4 sm:p-8">{children}</div>
+        <div className="p-4 sm:p-8 flex-1 overflow-y-auto">{children}</div>
       </div>
     </div>
   );

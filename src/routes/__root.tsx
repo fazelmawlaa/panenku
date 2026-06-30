@@ -4,6 +4,8 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
+  useNavigate,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -12,6 +14,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider, useAuth } from "@/lib/auth-context";
 
 function NotFoundComponent() {
   return (
@@ -65,35 +68,57 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "PANENKU — Dari Petani, Untuk Indonesia" },
-      { name: "description", content: "Marketplace hasil panen berbasis pre-order dan pasokan langsung. Hubungkan petani Indonesia dengan pembeli secara transparan dan berkelanjutan." },
-      { property: "og:title", content: "PANENKU — Dari Petani, Untuk Indonesia" },
-      { property: "og:description", content: "Pre-order hasil panen, belanja produk segar, dan marketplace limbah pertanian dalam satu platform." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" },
-    ],
-  }),
-  shellComponent: RootShell,
-  component: RootComponent,
-  notFoundComponent: NotFoundComponent,
-  errorComponent: ErrorComponent,
-});
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
+  {
+    head: () => ({
+      meta: [
+        { charSet: "utf-8" },
+        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        { title: "PANENKU — Dari Petani, Untuk Indonesia" },
+        {
+          name: "description",
+          content:
+            "Marketplace hasil panen berbasis pre-order dan pasokan langsung. Hubungkan petani Indonesia dengan pembeli secara transparan dan berkelanjutan.",
+        },
+        {
+          property: "og:title",
+          content: "PANENKU — Dari Petani, Untuk Indonesia",
+        },
+        {
+          property: "og:description",
+          content:
+            "Pre-order hasil panen, belanja produk segar, dan marketplace limbah pertanian dalam satu platform.",
+        },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary_large_image" },
+      ],
+      links: [
+        { rel: "stylesheet", href: appCss },
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        {
+          rel: "preconnect",
+          href: "https://fonts.gstatic.com",
+          crossOrigin: "anonymous",
+        },
+        {
+          rel: "stylesheet",
+          href: "https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap",
+        },
+      ],
+    }),
+    shellComponent: RootShell,
+    component: RootComponent,
+    notFoundComponent: NotFoundComponent,
+    errorComponent: ErrorComponent,
+  },
+);
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="id">
-      <head><HeadContent /></head>
+      <head>
+        <HeadContent />
+      </head>
       <body>
         {children}
         <Scripts />
@@ -102,12 +127,63 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function AuthGuard({ children }: { children: ReactNode }) {
+  const { isLoggedIn, isLoading, user } = useAuth();
+  const navigate = useNavigate();
+  const pathname = useRouterState({
+    select: (s) => s.location.pathname,
+  });
+
+  useEffect(() => {
+    if (!isLoading && !isLoggedIn && pathname !== "/onboarding" && pathname !== "/login") {
+      navigate({ to: "/onboarding" });
+      return;
+    }
+
+    if (!isLoading && isLoggedIn && user) {
+      if (user.role === "farmer" && (pathname === "/" || pathname === "/dashboard" || pathname === "/cart")) {
+        navigate({ to: "/farmer" });
+      } else if (user.role === "customer" && pathname.startsWith("/farmer")) {
+        navigate({ to: "/dashboard" });
+      }
+    }
+  }, [isLoggedIn, isLoading, pathname, navigate, user]);
+
+  // On onboarding or login page, always render (no guard)
+  if (pathname === "/onboarding" || pathname === "/login") {
+    return <>{children}</>;
+  }
+
+  // While loading, show a subtle loading state
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center gradient-hero">
+        <div className="glass-card rounded-3xl p-10 text-center">
+          <div className="animate-spin h-8 w-8 border-3 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-sm text-muted-foreground">Memuat...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not logged in → will redirect via useEffect
+  if (!isLoggedIn) {
+    return null;
+  }
+
+  return <>{children}</>;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
-      <Toaster />
+      <AuthProvider>
+        <AuthGuard>
+          <Outlet />
+        </AuthGuard>
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

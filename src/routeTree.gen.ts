@@ -13,6 +13,8 @@ import { Route as WasteRouteImport } from './routes/waste'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ProductsRouteImport } from './routes/products'
 import { Route as OrdersRouteImport } from './routes/orders'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as FarmerRouteImport } from './routes/farmer'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CartRouteImport } from './routes/cart'
@@ -47,6 +49,16 @@ const ProductsRoute = ProductsRouteImport.update({
 const OrdersRoute = OrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FarmerRoute = FarmerRouteImport.update({
@@ -130,6 +142,8 @@ export interface FileRoutesByFullPath {
   '/cart': typeof CartRoute
   '/dashboard': typeof DashboardRoute
   '/farmer': typeof FarmerRouteWithChildren
+  '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
   '/orders': typeof OrdersRoute
   '/products': typeof ProductsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -151,6 +165,8 @@ export interface FileRoutesByTo {
   '/cart': typeof CartRoute
   '/dashboard': typeof DashboardRoute
   '/farmer': typeof FarmerRouteWithChildren
+  '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
   '/orders': typeof OrdersRoute
   '/products': typeof ProductsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -173,6 +189,8 @@ export interface FileRoutesById {
   '/cart': typeof CartRoute
   '/dashboard': typeof DashboardRoute
   '/farmer': typeof FarmerRouteWithChildren
+  '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
   '/orders': typeof OrdersRoute
   '/products': typeof ProductsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -196,6 +214,8 @@ export interface FileRouteTypes {
     | '/cart'
     | '/dashboard'
     | '/farmer'
+    | '/login'
+    | '/onboarding'
     | '/orders'
     | '/products'
     | '/sitemap.xml'
@@ -217,6 +237,8 @@ export interface FileRouteTypes {
     | '/cart'
     | '/dashboard'
     | '/farmer'
+    | '/login'
+    | '/onboarding'
     | '/orders'
     | '/products'
     | '/sitemap.xml'
@@ -238,6 +260,8 @@ export interface FileRouteTypes {
     | '/cart'
     | '/dashboard'
     | '/farmer'
+    | '/login'
+    | '/onboarding'
     | '/orders'
     | '/products'
     | '/sitemap.xml'
@@ -260,6 +284,8 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   DashboardRoute: typeof DashboardRoute
   FarmerRoute: typeof FarmerRouteWithChildren
+  LoginRoute: typeof LoginRoute
+  OnboardingRoute: typeof OnboardingRoute
   OrdersRoute: typeof OrdersRoute
   ProductsRoute: typeof ProductsRouteWithChildren
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -296,6 +322,20 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/orders'
       preLoaderRoute: typeof OrdersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/farmer': {
@@ -458,6 +498,8 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   DashboardRoute: DashboardRoute,
   FarmerRoute: FarmerRouteWithChildren,
+  LoginRoute: LoginRoute,
+  OnboardingRoute: OnboardingRoute,
   OrdersRoute: OrdersRoute,
   ProductsRoute: ProductsRouteWithChildren,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
@@ -468,3 +510,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
