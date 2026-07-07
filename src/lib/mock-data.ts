@@ -1,4 +1,4 @@
-export type ProductType = "preorder" | "ready" | "waste";
+export type ProductType = "preorder" | "ready" | "waste" | "tools";
 
 export interface Product {
   id: string;
@@ -114,6 +114,34 @@ export const products: Product[] = [
     rating: 4.7, reviews: 14, image: img("photo-1543872084-c7bd3822856f"),
     description: "Batang pisang segar untuk industri serat alami dan kerajinan.",
   },
+  {
+    id: "t1", name: "Cangkul Baja Modern", category: "Alat", type: "tools",
+    farmer: "CV Tani Maju", farmerId: "f9", location: "Sidoarjo, Jawa Timur",
+    price: 65000, unit: "pcs", stock: 150,
+    rating: 4.8, reviews: 24, image: img("photo-1595974482597-4b8da8879bc5"),
+    description: "Cangkul berbahan baja karbon tinggi, awet, kuat, dan pas untuk pengolahan tanah keras.",
+  },
+  {
+    id: "t2", name: "Sprayer Elektrik 16L", category: "Alat", type: "tools",
+    farmer: "AgriTech Mandiri", farmerId: "f10", location: "Semarang, Jawa Tengah",
+    price: 275000, unit: "unit", stock: 45,
+    rating: 4.9, reviews: 37, image: img("photo-1585320806297-9794b3e4eeae"),
+    description: "Alat penyemprot hama elektrik baterai charge berkapasitas 16 liter dengan nozzle kuningan premium.",
+  },
+  {
+    id: "t3", name: "Benih Padi Unggul Ciherang", category: "Benih", type: "tools",
+    farmer: "Koperasi Benih Unggul", farmerId: "f11", location: "Sukabumi, Jawa Barat",
+    price: 85000, unit: "sak 5kg", stock: 200,
+    rating: 4.9, reviews: 52, image: img("photo-1574323347407-f5e1ad6d020b"),
+    description: "Benih padi Ciherang bersertifikat, potensi hasil tinggi dan tahan hama wereng coklat.",
+  },
+  {
+    id: "t4", name: "Pupuk Organik Cair 1L", category: "Pupuk", type: "tools",
+    farmer: "BioOrganik Nusantara", farmerId: "f12", location: "Sleman, DIY",
+    price: 35000, unit: "botol 1L", stock: 350,
+    rating: 4.8, reviews: 64, image: img("photo-1587049352846-4a222e784d38"),
+    description: "Pupuk organik cair multivitamin untuk memicu pertumbuhan vegetatif dan buah secara maksimal.",
+  }
 ];
 
 export const wasteCategories = [
@@ -183,10 +211,10 @@ export const salesData = [
 export const orderStatuses = ["Menunggu", "Dibayar", "Diproses", "Sedang Panen", "Pengiriman", "Selesai"];
 
 export const shippingMethods = [
-  { id: "regular", name: "Reguler", courier: "JNE REG", eta: "3-5 hari", price: 18000, desc: "Pengiriman standar, paling hemat" },
-  { id: "express", name: "Express", courier: "SiCepat BEST", eta: "1-2 hari", price: 32000, desc: "Cepat sampai, cocok untuk produk segar" },
-  { id: "sameday", name: "Same Day", courier: "GoSend Instant", eta: "Hari ini", price: 45000, desc: "Tersedia untuk area dalam kota" },
-  { id: "cargo", name: "Kargo", courier: "Lion Parcel JAGOPACK", eta: "5-7 hari", price: 12000, desc: "Untuk pesanan jumlah besar (>50kg)" },
+  { id: "cod", name: "COD (Bayar di Tempat)", courier: "Kurir Internal / COD", eta: "Bayar tunai saat barang sampai", price: 15000, desc: "Bayar di tempat saat barang diterima" },
+  { id: "jnt", name: "J&T Express", courier: "J&T EZ", eta: "2-3 hari", price: 18000, desc: "Pengiriman cepat dan terpercaya" },
+  { id: "jne", name: "JNE Express", courier: "JNE YES", eta: "1-2 hari", price: 28000, desc: "Layanan ekspres satu hari sampai" },
+  { id: "pos", name: "Pos Indonesia", courier: "Pos Kilat Khusus", eta: "3-5 hari", price: 12000, desc: "Layanan pos menjangkau seluruh pelosok" },
 ] as const;
 
 export const trackingEvents = [

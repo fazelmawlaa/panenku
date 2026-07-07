@@ -6,7 +6,7 @@ export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role: "customer" | "farmer";
+  role: "pembeli" | "petani";
 }
 
 // Helper to save Supabase session tokens in cookies
@@ -36,10 +36,10 @@ function clearSessionCookies() {
 // ---------- server functions ----------
 export const registerUser = createServerFn({ method: "POST" })
   .validator(
-    (data: { name: string; email: string; password: string; role?: "customer" | "farmer" }) => data,
+    (data: { name: string; email: string; password: string; role?: "petani" | "pembeli" }) => data,
   )
   .handler(async ({ data }) => {
-    const { name, email, password, role = "customer" } = data;
+    const { name, email, password, role = "pembeli" } = data;
 
     const { data: authData, error } = await supabase.auth.signUp({
       email,
@@ -70,6 +70,10 @@ export const registerUser = createServerFn({ method: "POST" })
 
     return {
       success: true as const,
+      session: session ? {
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+      } : null,
       user: {
         id: user.id,
         name,
@@ -104,11 +108,15 @@ export const loginUser = createServerFn({ method: "POST" })
 
     return {
       success: true as const,
+      session: {
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+      },
       user: {
         id: user.id,
         name: user.user_metadata?.name || "User",
         email: user.email || "",
-        role: (user.user_metadata?.role as "customer" | "farmer") || "customer",
+        role: (user.user_metadata?.role === "calon_petani" ? "pembeli" : user.user_metadata?.role as "pembeli" | "petani") || "pembeli",
       } as AuthUser,
     };
   });
@@ -143,7 +151,7 @@ export const getSession = createServerFn({ method: "GET" }).handler(
           id: user.id,
           name: user.user_metadata?.name || "User",
           email: user.email || "",
-          role: (user.user_metadata?.role as "customer" | "farmer") || "customer",
+          role: (user.user_metadata?.role === "calon_petani" ? "pembeli" : user.user_metadata?.role as "pembeli" | "petani") || "pembeli",
         } as AuthUser,
       };
     }
@@ -166,7 +174,7 @@ export const getSession = createServerFn({ method: "GET" }).handler(
             id: newUser.id,
             name: newUser.user_metadata?.name || "User",
             email: newUser.email || "",
-            role: (newUser.user_metadata?.role as "customer" | "farmer") || "customer",
+            role: (newUser.user_metadata?.role === "calon_petani" ? "pembeli" : newUser.user_metadata?.role as "pembeli" | "petani") || "pembeli",
           } as AuthUser,
         };
       }

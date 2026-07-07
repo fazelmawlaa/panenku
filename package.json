@@ -39,12 +39,8 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-toggle": "^1.1.10",
     "@radix-ui/react-toggle-group": "^1.1.11",
-    "@radix-ui/react-tooltip": "^1.2.8",
-<<<<<<< HEAD
+    "@radix-ui/react-tooltip": "^1.2.10",
     "@supabase/supabase-js": "^2.109.0",
-=======
-    "@supabase/supabase-js": "^2.108.2",
->>>>>>> 1fc4c8c6e2c496da55c449d48f785ee9053f9c3b
     "@tailwindcss/vite": "^4.2.1",
     "@tanstack/react-query": "^5.101.1",
     "@tanstack/react-router": "^1.170.16",

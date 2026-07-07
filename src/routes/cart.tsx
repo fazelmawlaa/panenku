@@ -1,69 +1,162 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { CustomerLayout } from "@/components/layout/CustomerLayout";
-import { products, formatRupiah } from "@/lib/mock-data";
+import { formatRupiah, type Product } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Tag, ShoppingBag } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Trash2, Tag, ShoppingBag, Loader2 } from "lucide-react";
+import { fetchProductsFromSupabase } from "@/lib/products-db";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/cart")({
-  head: () => ({ meta: [{ title: "Keranjang — PANENKU" }] }),
+  head: () => ({ meta: [{ title: "Keranjang — RumohTani" }] }),
   component: Cart,
 });
 
-const initial = [
-  { id: products[0].id, qty: 10 },
-  { id: products[2].id, qty: 3 },
-  { id: products[6].id, qty: 50 },
-];
-
 function Cart() {
-  const [items, setItems] = useState(initial);
-  const list = items.map((i) => ({ ...products.find((p) => p.id === i.id)!, qty: i.qty }));
+  const { user } = useAuth();
+  const [items, setItems] = useState<{ id: string; product_id: string; qty: number }[]>([]);
+  const [dbProducts, setDbProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const subtotal = list.reduce((s, p) => s + p.price * p.qty, 0);
+  const loadCartData = async () => {
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const productsData = await fetchProductsFromSupabase();
+      setDbProducts(productsData || []);
+
+      const { data, error } = await supabase
+        .from("cart_items")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (data && !error) {
+        setItems(data);
+      }
+    } catch (err) {
+      console.error("Error loading cart:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCartData();
+  }, [user]);
+
+  const list = useMemo(() => {
+    return items
+      .map((i) => {
+        const match = dbProducts.find((p) => p.id === i.product_id);
+        if (!match) return null;
+        return { ...match, qty: i.qty, cartItemId: i.id };
+      })
+      .filter(Boolean) as (Product & { qty: number; cartItemId: string })[];
+  }, [items, dbProducts]);
+
+  const subtotal = useMemo(() => {
+    return list.reduce((s: number, p: Product & { qty: number }) => s + p.price * p.qty, 0);
+  }, [list]);
+
   const shipping = 25000;
   const total = subtotal + shipping;
 
-  const setQty = (id: string, q: number) => setItems(items.map((i) => i.id === id ? { ...i, qty: Math.max(1, q) } : i));
-  const remove = (id: string) => setItems(items.filter((i) => i.id !== id));
+  const setQty = async (productId: string, q: number) => {
+    if (!user) return;
+    const safeQty = Math.max(1, q);
+    
+    // Optimistic UI update
+    setItems(prev => prev.map(item => item.product_id === productId ? { ...item, qty: safeQty } : item));
 
-  const groups: Record<string, typeof list> = { preorder: [], ready: [], waste: [] };
-  list.forEach((p) => groups[p.type].push(p));
+    try {
+      await supabase
+        .from("cart_items")
+        .update({ qty: safeQty })
+        .eq("user_id", user.id)
+        .eq("product_id", productId);
+    } catch (err) {
+      console.error("Error updating cart quantity:", err);
+    }
+  };
+
+  const remove = async (productId: string) => {
+    if (!user) return;
+
+    // Optimistic UI update
+    setItems(prev => prev.filter(item => item.product_id !== productId));
+
+    try {
+      await supabase
+        .from("cart_items")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("product_id", productId);
+    } catch (err) {
+      console.error("Error removing cart item:", err);
+      // Rollback
+      loadCartData();
+    }
+  };
+
+  const groups: Record<string, (Product & { qty: number; cartItemId: string })[]> = { 
+    preorder: [], 
+    ready: [], 
+    waste: [], 
+    tools: [] 
+  };
+  list.forEach((p: Product & { qty: number; cartItemId: string }) => {
+    const typeKey = p.type === "tools" ? "tools" : p.type;
+    if (!groups[typeKey]) {
+      groups[typeKey] = [];
+    }
+    groups[typeKey].push(p);
+  });
 
   return (
     <CustomerLayout>
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
+      <div className="mx-auto max-w-full px-4 sm:px-8 md:px-12 py-8">
         <h1 className="font-display text-3xl font-bold mb-6">Keranjang Belanja</h1>
 
-        {list.length === 0 ? (
-          <div className="glass-card rounded-3xl p-12 text-center">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm font-light">Memuat keranjang belanja...</p>
+          </div>
+        ) : list.length === 0 ? (
+          <div className="glass-card rounded-3xl p-12 text-center bg-white border border-border/30">
             <ShoppingBag className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
             <p className="text-muted-foreground mb-4">Keranjang kosong</p>
             <Link to="/products"><Button className="rounded-full">Mulai Belanja</Button></Link>
           </div>
         ) : (
-          <div className="grid lg:grid-cols-[1fr_380px] gap-6">
+          <div className="grid lg:grid-cols-[1fr_380px] gap-6 text-left">
             <div className="space-y-5">
-              {(["preorder", "ready", "waste"] as const).map((key) => groups[key].length > 0 && (
-                <div key={key} className="glass-card rounded-2xl p-5">
+              {(["preorder", "ready", "waste", "tools"] as const).map((key) => groups[key] && groups[key].length > 0 && (
+                <div key={key} className="glass-card rounded-2xl p-5 bg-white border border-border/30 shadow-sm">
                   <div className="flex items-center gap-2 mb-4">
                     <Badge className={
                       key === "preorder" ? "bg-primary/10 text-primary border-primary/20" :
                       key === "ready" ? "bg-honey/15 text-foreground border-honey/30" :
+                      key === "tools" ? "bg-blue-500/10 text-blue-800 border-blue-500/20" :
                       "bg-earth/10 text-earth border-earth/20"
                     }>
-                      {key === "preorder" ? "Pre-Order" : key === "ready" ? "Ready Stock" : "Limbah Pertanian"}
+                      {key === "preorder" ? "Pre-Order" : key === "ready" ? "Ready Stock" : key === "tools" ? "Alat Tani" : "Limbah Pertanian"}
                     </Badge>
                     <span className="text-xs text-muted-foreground">{groups[key].length} item</span>
                   </div>
                   <div className="space-y-4">
-                    {groups[key].map((p) => (
+                    {groups[key].map((p: any) => (
                       <div key={p.id} className="flex flex-wrap items-center gap-4 pb-4 border-b last:border-0 border-border/60">
-                        <img src={p.image} className="h-20 w-20 rounded-xl object-cover" alt={p.name} />
+                        <img src={p.image} className="h-20 w-20 rounded-xl object-cover border border-border/20 shadow-sm" alt={p.name} />
                         <div className="flex-1 min-w-[140px]">
-                          <Link to="/products/$id" params={{ id: p.id }} className="font-semibold hover:text-primary">{p.name}</Link>
+                          <Link to="/products/$id" params={{ id: p.id }} className="font-semibold hover:text-primary transition">{p.name}</Link>
                           <div className="text-xs text-muted-foreground">{p.farmer} · {p.location}</div>
                           <div className="text-primary font-bold mt-1">{formatRupiah(p.price)} / {p.unit}</div>
                         </div>
@@ -73,7 +166,7 @@ function Cart() {
                           <Button variant="outline" size="icon" className="rounded-full h-8 w-8" onClick={() => setQty(p.id, p.qty + 1)}>+</Button>
                         </div>
                         <div className="font-bold w-24 text-right">{formatRupiah(p.price * p.qty)}</div>
-                        <button onClick={() => remove(p.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
+                        <button onClick={() => remove(p.id)} className="text-muted-foreground hover:text-destructive transition"><Trash2 className="h-4 w-4" /></button>
                       </div>
                     ))}
                   </div>
@@ -81,26 +174,37 @@ function Cart() {
               ))}
             </div>
 
-            <div className="lg:sticky lg:top-24 h-fit space-y-4">
-              <div className="glass-card rounded-2xl p-5">
-                <div className="flex gap-2 mb-4">
-                  <div className="relative flex-1">
-                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Kode voucher" className="pl-9 rounded-full" />
-                  </div>
-                  <Button variant="outline" className="rounded-full">Pakai</Button>
+            {/* Order summary */}
+            <div className="glass-card rounded-2xl p-5 bg-white border border-border/30 shadow-sm h-fit space-y-4">
+              <h2 className="font-display font-bold text-lg border-b border-border/25 pb-3">Ringkasan Belanja</h2>
+              <div className="space-y-2.5 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="font-semibold">{formatRupiah(subtotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Ongkos Kirim</span>
+                  <span className="font-semibold">{formatRupiah(shipping)}</span>
+                </div>
+                <div className="flex justify-between border-t pt-3 font-bold text-base">
+                  <span>Total Harga</span>
+                  <span className="text-primary">{formatRupiah(total)}</span>
                 </div>
               </div>
-              <div className="glass-card rounded-2xl p-5 space-y-3">
-                <h3 className="font-display font-bold">Ringkasan</h3>
-                <Row label="Subtotal" value={formatRupiah(subtotal)} />
-                <Row label="Pengiriman" value={formatRupiah(shipping)} />
-                <div className="border-t border-border pt-3 flex justify-between font-display text-lg font-bold">
-                  <span>Total</span><span className="text-primary">{formatRupiah(total)}</span>
-                </div>
-                <Link to="/checkout/$id" params={{ id: list[0].id }}>
-                  <Button size="lg" className="w-full rounded-full mt-2 shadow-soft">Checkout</Button>
-                </Link>
+
+              {/* Promo code */}
+              <div className="flex gap-2 pt-2">
+                <Input placeholder="Kode promo" className="rounded-xl h-10 border-border/50 text-xs" />
+                <Button variant="outline" className="rounded-xl h-10 px-4 font-bold text-xs"><Tag className="h-4 w-4 mr-1" /> Pakai</Button>
+              </div>
+
+              {/* Checkout link button */}
+              <div className="pt-2">
+                {list.length > 0 && (
+                  <Link to="/checkout/$id" params={{ id: list[0].id }} search={{ qty: list[0].qty }}>
+                    <Button className="w-full rounded-full py-6 font-bold shadow-soft">Lanjut ke Checkout</Button>
+                  </Link>
+                )}
               </div>
             </div>
           </div>
@@ -109,5 +213,3 @@ function Cart() {
     </CustomerLayout>
   );
 }
-
-function Row({ label, value }: any) { return <div className="flex justify-between text-sm"><span className="text-muted-foreground">{label}</span><span>{value}</span></div>; }

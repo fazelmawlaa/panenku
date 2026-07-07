@@ -10,7 +10,7 @@ export function RequireRole({ role, children }: { role: AppRole; children: React
   useEffect(() => {
     if (loading) return;
     if (!session) {
-      navigate({ to: "/auth", replace: true });
+      navigate({ to: "/login", replace: true });
       return;
     }
     if (userRole && userRole !== role) {

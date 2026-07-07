@@ -22,6 +22,13 @@ export type Database = {
           id: string
           phone: string | null
           updated_at: string
+          experience: string | null
+          focus_area: string | null
+          certification: string | null
+          bio: string | null
+          ktp_number: string | null
+          ktp_photo: string | null
+          avatar_url: string | null
         }
         Insert: {
           address?: string | null
@@ -30,6 +37,13 @@ export type Database = {
           id: string
           phone?: string | null
           updated_at?: string
+          experience?: string | null
+          focus_area?: string | null
+          certification?: string | null
+          bio?: string | null
+          ktp_number?: string | null
+          ktp_photo?: string | null
+          avatar_url?: string | null
         }
         Update: {
           address?: string | null
@@ -38,6 +52,13 @@ export type Database = {
           id?: string
           phone?: string | null
           updated_at?: string
+          experience?: string | null
+          focus_area?: string | null
+          certification?: string | null
+          bio?: string | null
+          ktp_number?: string | null
+          ktp_photo?: string | null
+          avatar_url?: string | null
         }
         Relationships: []
       }
@@ -59,6 +80,216 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          id: string
+          name: string
+          category: string
+          type: string
+          farmer: string
+          farmer_id: string | null
+          location: string
+          price: number
+          unit: string
+          stock: number
+          ordered: number
+          estimated_harvest: string | null
+          cultivation: string | null
+          rating: number
+          reviews: number
+          image: string
+          description: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          category: string
+          type: string
+          farmer: string
+          farmer_id?: string | null
+          location: string
+          price: number
+          unit: string
+          stock: number
+          ordered?: number
+          estimated_harvest?: string | null
+          cultivation?: string | null
+          rating?: number
+          reviews?: number
+          image: string
+          description: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          category?: string
+          type?: string
+          farmer?: string
+          farmer_id?: string | null
+          location?: string
+          price?: number
+          unit?: string
+          stock?: number
+          ordered?: number
+          estimated_harvest?: string | null
+          cultivation?: string | null
+          rating?: number
+          reviews?: number
+          image?: string
+          description?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      product_reviews: {
+        Row: {
+          id: string
+          product_id: string
+          user_id: string | null
+          user_name: string
+          rating: number
+          comment: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          user_id?: string | null
+          user_name: string
+          rating: number
+          comment?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          user_id?: string | null
+          user_name?: string
+          rating?: number
+          comment?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          id: string
+          user_id: string
+          product_id: string
+          product_name: string
+          qty: string
+          total: number
+          status: string
+          date: string
+          farmer_id: string | null
+          shipping_address: string
+          buyer_name: string
+          buyer_phone: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          product_id: string
+          product_name: string
+          qty: string
+          total: number
+          status?: string
+          date: string
+          farmer_id?: string | null
+          shipping_address?: string
+          buyer_name?: string
+          buyer_phone?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          product_id?: string
+          product_name?: string
+          qty?: string
+          total?: number
+          status?: string
+          date?: string
+          farmer_id?: string | null
+          shipping_address?: string
+          buyer_name?: string
+          buyer_phone?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      cart_items: {
+        Row: {
+          id: string
+          user_id: string
+          product_id: string
+          qty: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          product_id: string
+          qty?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          product_id?: string
+          qty?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      shipping_addresses: {
+        Row: {
+          id: string
+          user_id: string
+          recipient_name: string
+          recipient_phone: string
+          province: string
+          city: string
+          district: string
+          postal_code: string
+          street_address: string
+          details: string | null
+          is_default: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          recipient_name: string
+          recipient_phone: string
+          province: string
+          city: string
+          district: string
+          postal_code: string
+          street_address: string
+          details?: string | null
+          is_default?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          recipient_name?: string
+          recipient_phone?: string
+          province?: string
+          city?: string
+          district?: string
+          postal_code?: string
+          street_address?: string
+          details?: string | null
+          is_default?: boolean
+          created_at?: string
         }
         Relationships: []
       }

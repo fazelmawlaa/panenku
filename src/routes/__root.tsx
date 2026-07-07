@@ -15,6 +15,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { AuthProvider as SupabaseAuthProvider } from "@/hooks/use-auth";
 
 function NotFoundComponent() {
   return (
@@ -74,20 +75,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       meta: [
         { charSet: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1" },
-        { title: "PANENKU — Dari Petani, Untuk Indonesia" },
+        { title: "RumohTani — Dari Petani, Untuk Indonesia" },
         {
           name: "description",
           content:
-            "Marketplace hasil panen berbasis pre-order dan pasokan langsung. Hubungkan petani Indonesia dengan pembeli secara transparan dan berkelanjutan.",
+            "Marketplace pertanian terintegrasi. Hubungkan petani Indonesia dengan pembeli secara transparan dan berkelanjutan.",
         },
         {
           property: "og:title",
-          content: "PANENKU — Dari Petani, Untuk Indonesia",
+          content: "RumohTani — Dari Petani, Untuk Indonesia",
         },
         {
           property: "og:description",
           content:
-            "Pre-order hasil panen, belanja produk segar, dan marketplace limbah pertanian dalam satu platform.",
+            "Marketplace hasil panen, perlengkapan budidaya, limbah pertanian, dan sesi konsultasi tani dalam satu platform.",
         },
         { property: "og:type", content: "website" },
         { name: "twitter:card", content: "summary_large_image" },
@@ -127,7 +128,6 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
-<<<<<<< HEAD
 function AuthGuard({ children }: { children: ReactNode }) {
   const { isLoggedIn, isLoading, user } = useAuth();
   const navigate = useNavigate();
@@ -142,9 +142,12 @@ function AuthGuard({ children }: { children: ReactNode }) {
     }
 
     if (!isLoading && isLoggedIn && user) {
-      if (user.role === "farmer" && (pathname === "/" || pathname === "/dashboard" || pathname === "/cart")) {
+      const isFarmer = user.role === "petani";
+      const isCustomer = user.role === "pembeli" || (user.role as any) === "calon_petani";
+
+      if (isFarmer && (pathname === "/" || pathname === "/dashboard" || pathname === "/cart")) {
         navigate({ to: "/farmer" });
-      } else if (user.role === "customer" && pathname.startsWith("/farmer")) {
+      } else if (isCustomer && pathname.startsWith("/farmer")) {
         navigate({ to: "/dashboard" });
       }
     }
@@ -174,24 +177,19 @@ function AuthGuard({ children }: { children: ReactNode }) {
 
   return <>{children}</>;
 }
-=======
-import { AuthProvider } from "@/hooks/use-auth";
->>>>>>> 1fc4c8c6e2c496da55c449d48f785ee9053f9c3b
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-<<<<<<< HEAD
-        <AuthGuard>
-          <Outlet />
-        </AuthGuard>
-=======
-        <Outlet />
->>>>>>> 1fc4c8c6e2c496da55c449d48f785ee9053f9c3b
-        <Toaster />
-      </AuthProvider>
+      <SupabaseAuthProvider>
+        <AuthProvider>
+          <AuthGuard>
+            <Outlet />
+          </AuthGuard>
+          <Toaster />
+        </AuthProvider>
+      </SupabaseAuthProvider>
     </QueryClientProvider>
   );
 }

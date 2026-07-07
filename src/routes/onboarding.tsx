@@ -8,18 +8,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
 import { testimonials } from "@/lib/mock-data";
-import logoPanenku from "@/assets/logo_panenku.png";
+import logoRumohTani from "@/assets/rumohtani_transparent.png";
 import farmingBg from "@/assets/farming_bg.png";
 import gsap from "gsap";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
     meta: [
-      { title: "PANENKU+ — Belajar, Bertani, Panen, & Berkembang" },
+      { title: "RumohTani — Marketplace & Konsultasi Pertanian Terintegrasi" },
       {
         name: "description",
         content:
-          "Platform Agritech untuk belajar bertani, berkonsultasi dengan ahli, memanen, dan menjual hasil pertanian serta limbah secara berkelanjutan.",
+          "RumohTani menghubungkan petani berpengalaman dengan pembeli untuk transaksi hasil panen, alat tani, limbah sirkular, dan konsultasi interaktif.",
       },
     ],
   }),
@@ -277,13 +277,9 @@ function OnboardingPage() {
         }`}>
         <nav className="flex items-center justify-between w-full max-w-[1520px] bg-[#0c0d0c]/90 backdrop-blur-xl rounded-full px-4 sm:px-8 py-3.5 sm:py-4 border border-white/10 text-white shadow-2xl">
           {/* Logo Brand */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <img src={logoPanenku} alt="PANENKU+" className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl object-contain bg-white/20 p-1" />
-            <div className="leading-tight text-left">
-              <span className="font-['Plus_Jakarta_Sans',sans-serif] font-black tracking-tight text-base sm:text-2xl block">PANENKU+</span>
-              <span className="hidden lg:block text-[9px] text-white/50 font-semibold tracking-wider -mt-0.5">Belajar, Bertani, Panen & Berkembang</span>
-            </div>
-          </div>
+          <Link to="/" className="flex items-center">
+            <img src={logoRumohTani} alt="RumohTani" className="h-10 sm:h-12 object-contain invert brightness-0" />
+          </Link>
           {/* Navigation Links */}
           <div className="hidden md:flex items-center gap-10 text-xs sm:text-sm font-semibold tracking-wide text-white/80">
             <a href="#about" onClick={(e) => handleAnchorClick(e, "#about")} className="hover:text-[#b4f05a] transition duration-200">Tentang Kami</a>
@@ -334,7 +330,7 @@ function OnboardingPage() {
 
           {/* Description */}
           <p className="gsap-hero-desc text-sm sm:text-base lg:text-xl text-white/80 max-w-4xl font-light leading-relaxed">
-            PANENKU+ menghubungkan calon petani dan pelaku usaha dalam ekosistem agritech terintegrasi: belajar langsung lewat konsultasi ahli, berdagang hasil bumi via pre-order, dan maksimalkan sirkular limbah tani bernilai tinggi.
+            RumohTani menghubungkan petani berpengalaman dengan pembeli untuk transaksi hasil panen, perlengkapan budidaya, limbah sirkular, dan konsultasi interaktif dalam satu ekosistem terintegrasi.
           </p>
 
           {/* Action buttons */}
@@ -374,12 +370,32 @@ function OnboardingPage() {
       <div className="w-full px-4 sm:px-6 lg:px-9 flex flex-col items-center">
 
         {/* 2. DESCRIPTION & STATS SECTION (FULL SCREEN EXPANDED) */}
-        <section id="about" className="py-24 w-full max-w-[1560px] mx-auto text-center space-y-16">
+        <section id="about" className="py-24 w-full max-w-[1560px] mx-auto space-y-16">
           <RevealSection>
-            {/* Mixed font taglines */}
-            <p className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl sm:text-3xl lg:text-[2.5rem] text-[#1a2b1b]/80 leading-snug font-light max-w-6xl mx-auto">
-              PANENKU+ dirancang untuk membantu masyarakat yang ingin <span className="font-semibold text-primary">memulai usaha pertanian tanpa keraguan</span>. Kami menghubungkan Anda dengan <span className="font-['Playfair_Display',serif] italic font-normal text-foreground">pendampingan ahli berbasis sesi, jaminan pasar pre-order</span>, serta pengolahan limbah organik sirkular bernilai ekonomi tinggi.
-            </p>
+            <div className="grid lg:grid-cols-[1fr_2fr] gap-12 text-left items-start">
+              <div className="space-y-4">
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#b4f05a] bg-primary px-4 py-1.5 rounded-full inline-block">
+                  Tentang RumohTani
+                </span>
+                <h3 className="font-['Plus_Jakarta_Sans',sans-serif] text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#1a2b1b] leading-tight">
+                  Mendukung <span className="font-['Playfair_Display',serif] italic font-normal">Digitalisasi Sektor Pertanian</span> Indonesia.
+                </h3>
+              </div>
+              <div className="text-zinc-700 font-light text-sm sm:text-base leading-relaxed space-y-6">
+                <p>
+                  <strong>RUMOHTANI</strong> merupakan platform marketplace pertanian terintegrasi yang dirancang untuk mendukung digitalisasi sektor pertanian melalui penyediaan berbagai kebutuhan dalam satu ekosistem. Platform ini memungkinkan pengguna untuk membeli hasil panen, limbah pertanian, alat dan perlengkapan budidaya, serta mengakses layanan konsultasi dengan petani berpengalaman melalui sistem sesi.
+                </p>
+                <p>
+                  RUMOHTANI hadir sebagai solusi atas berbagai permasalahan yang dihadapi petani, seperti keterbatasan akses pasar, rendahnya pemanfaatan limbah pertanian, serta minimnya sarana berbagi pengetahuan dan pengalaman antar pelaku pertanian. Melalui platform ini, petani tidak hanya berperan sebagai penjual hasil panen, tetapi juga dapat menjual limbah pertanian yang masih memiliki nilai ekonomi, menawarkan alat dan kebutuhan budidaya, serta berbagi pengalaman melalui layanan konsultasi kepada calon petani maupun masyarakat yang ingin memulai usaha di bidang pertanian.
+                </p>
+                <p>
+                  Sebagai marketplace pertanian modern, RUMOHTANI menyediakan berbagai kategori produk, mulai dari komoditas pertanian segar, hasil panen siap jual, limbah pertanian yang dapat dimanfaatkan kembali, hingga alat dan perlengkapan pertanian. Selain itu, fitur konsultasi berbasis sesi memungkinkan pengguna memperoleh informasi, pendampingan, dan wawasan praktis langsung dari petani berpengalaman terkait teknik budidaya, pengelolaan usaha tani, hingga strategi pemasaran hasil panen.
+                </p>
+                <p>
+                  Dengan mengintegrasikan perdagangan hasil pertanian, ekonomi sirkular melalui pemanfaatan limbah, penyediaan sarana produksi, serta layanan konsultasi dalam satu platform, RUMOHTANI diharapkan dapat meningkatkan kesejahteraan petani, memperluas akses pasar, mendorong regenerasi petani, serta mewujudkan ekosistem pertanian yang lebih inklusif, inovatif, dan berkelanjutan.
+                </p>
+              </div>
+            </div>
           </RevealSection>
 
           {/* 4 columns stats */}
@@ -1023,11 +1039,10 @@ function OnboardingPage() {
         <div className="grid gap-10 md:grid-cols-4 relative z-10">
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <img src={logoPanenku} alt="PANENKU+ Logo" className="h-10 w-10 rounded-xl object-contain bg-white/20 p-1" />
-              <div className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl font-black tracking-tight text-white">PANENKU+</div>
+              <img src={logoRumohTani} alt="RumohTani" className="h-10 object-contain invert brightness-0" />
             </div>
             <p className="text-xs sm:text-sm text-white/50 max-w-md leading-relaxed font-light">
-              Platform digital pertanian terintegrasi. Menghubungkan petani berpengalaman dengan calon petani melalui sesi konsultasi belajar, marketplace panen pre-order, dan jual beli limbah sirkular.
+              Platform digital pertanian terintegrasi. Menghubungkan petani berpengalaman dengan pembeli untuk transaksi hasil panen, perlengkapan budidaya, limbah sirkular, dan sesi konsultasi.
             </p>
           </div>
           <div>

@@ -1,30 +1,25 @@
 import {
   createContext,
   useContext,
-  useState,
   useCallback,
-  useEffect,
   type ReactNode,
 } from "react";
 import type { AuthUser } from "./auth.server";
-import {
-  getSession,
-  loginUser,
-  registerUser,
-  logoutUser,
-} from "./auth.server";
+import { useAuth as useSupabaseAuth } from "@/hooks/use-auth";
+import { loginUser, registerUser } from "./auth.server";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   isLoggedIn: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: AuthUser }>;
   register: (
     name: string,
     email: string,
     password: string,
-    role?: "customer" | "farmer",
-  ) => Promise<{ success: boolean; error?: string }>;
+    role?: "petani" | "pembeli",
+  ) => Promise<{ success: boolean; error?: string; user?: AuthUser }>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
 }
@@ -33,65 +28,61 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({
   children,
-  initialUser,
 }: {
   children: ReactNode;
-  initialUser?: AuthUser | null;
 }) {
-  const [user, setUser] = useState<AuthUser | null>(initialUser ?? null);
-  const [isLoading, setIsLoading] = useState(!initialUser);
+  const { user: sbUser, role: sbRole, loading, signOut } = useSupabaseAuth();
 
-  const refreshSession = useCallback(async () => {
-    try {
-      const result = await getSession();
-      setUser(result.user ?? null);
-    } catch {
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const isLoggedIn = !!sbUser;
+  const isLoading = loading;
 
-  useEffect(() => {
-    if (!initialUser) {
-      refreshSession();
-    }
-  }, [initialUser, refreshSession]);
-
-  const login = useCallback(
-    async (email: string, password: string) => {
-      const result = await loginUser({ data: { email, password } });
-      if (result.success) {
-        setUser(result.user);
-        return { success: true };
+  const user: AuthUser | null = sbUser
+    ? {
+        id: sbUser.id,
+        name: sbUser.user_metadata?.name || sbUser.user_metadata?.full_name || sbUser.email?.split("@")[0] || "User",
+        email: sbUser.email || "",
+        role: ((sbRole as any) === "calon_petani" ? "pembeli" : sbRole as "pembeli" | "petani") || "pembeli",
       }
-      return { success: false, error: result.error };
-    },
-    [],
-  );
+    : null;
+
+  const login = useCallback(async (email: string, password: string) => {
+    const result = await loginUser({ data: { email, password } });
+    if (result.success && result.session) {
+      await supabase.auth.setSession({
+        access_token: result.session.access_token,
+        refresh_token: result.session.refresh_token,
+      });
+    }
+    return result;
+  }, []);
 
   const register = useCallback(
     async (
       name: string,
       email: string,
       password: string,
-      role?: "customer" | "farmer",
+      role?: "petani" | "pembeli",
     ) => {
       const result = await registerUser({
         data: { name, email, password, role },
       });
-      if (result.success) {
-        setUser(result.user);
-        return { success: true };
+      if (result.success && result.session) {
+        await supabase.auth.setSession({
+          access_token: result.session.access_token,
+          refresh_token: result.session.refresh_token,
+        });
       }
-      return { success: false, error: result.error };
+      return result;
     },
     [],
   );
 
   const logout = useCallback(async () => {
-    await logoutUser();
-    setUser(null);
+    await signOut();
+  }, [signOut]);
+
+  const refreshSession = useCallback(async () => {
+    // Supabase Auth provider handles this automatically under the hood
   }, []);
 
   return (
@@ -99,7 +90,7 @@ export function AuthProvider({
       value={{
         user,
         isLoading,
-        isLoggedIn: !!user,
+        isLoggedIn,
         login,
         register,
         logout,

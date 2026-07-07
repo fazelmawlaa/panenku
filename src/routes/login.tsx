@@ -4,15 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth-context";
-import { Mail, Lock, User, Loader2, Eye, EyeOff, ArrowLeft } from "lucide-react";
-import logoPanenku from "@/assets/logo_panenku.png";
+import { type AppRole } from "@/hooks/use-auth";
+import { Mail, Lock, User, Loader2, Eye, EyeOff, ArrowLeft, Phone, MapPin, Briefcase } from "lucide-react";
+import logoRumohTani from "@/assets/rumohtani_transparent.png";
 import farmingBg from "@/assets/farming_bg.png";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Masuk — PANENKU+" },
-      { name: "description", content: "Masuk ke akun PANENKU+ Anda untuk mengakses semua fitur agritech belajar, bertani, panen, & sirkular limbah." },
+      { title: "Masuk — RumohTani" },
+      { name: "description", content: "Masuk ke akun RumohTani Anda untuk mengakses semua fitur marketplace dan konsultasi pertanian terintegrasi." },
     ],
   }),
   component: LoginPage,
@@ -32,17 +34,40 @@ function LoginPage() {
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
-  const [regRole, setRegRole] = useState<"customer" | "farmer">("customer");
+  const [regPhone, setRegPhone] = useState("");
+  const [regLocation, setRegLocation] = useState("");
+  const [regExperience, setRegExperience] = useState("");
+  const [regRole, setRegRole] = useState<AppRole>("pembeli");
 
-  const { login, register, isLoggedIn, isLoading } = useAuth();
+  const { login, register, isLoggedIn, isLoading, user } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      const roleParam = params.get("role");
+      if (tabParam === "register" || tabParam === "login") {
+        setTab(tabParam as "login" | "register");
+      }
+      if (roleParam === "petani" || roleParam === "pembeli") {
+        setRegRole(roleParam as any);
+      }
+    } catch (e) {
+      console.error("Error parsing login query params:", e);
+    }
+  }, []);
 
   // Redirect if already logged in
   useEffect(() => {
-    if (!isLoading && isLoggedIn) {
-      navigate({ to: "/" });
+    if (!isLoading && isLoggedIn && user) {
+      if (user.role === "petani") {
+        navigate({ to: "/farmer" });
+      } else {
+        navigate({ to: "/dashboard" });
+      }
     }
-  }, [isLoggedIn, isLoading, navigate]);
+  }, [isLoggedIn, isLoading, navigate, user]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,8 +76,12 @@ function LoginPage() {
 
     try {
       const result = await login(loginEmail, loginPassword);
-      if (result.success) {
-        navigate({ to: "/" });
+      if (result.success && result.user) {
+        if (result.user.role === "petani") {
+          navigate({ to: "/farmer" });
+        } else {
+          navigate({ to: "/dashboard" });
+        }
       } else {
         setError(result.error || "Login gagal");
       }
@@ -76,8 +105,50 @@ function LoginPage() {
 
     try {
       const result = await register(regName, regEmail, regPassword, regRole);
-      if (result.success) {
-        navigate({ to: "/" });
+      if (result.success && result.user) {
+        const userId = result.user.id;
+        
+        // 1. Update newly created profiles row in Supabase safely
+        try {
+          const { error } = await (supabase as any)
+            .from("profiles")
+            .update({
+              phone: regPhone,
+              address: regLocation,
+              experience: regRole === "petani" ? regExperience : "-"
+            })
+            .eq("id", userId);
+
+          if (error) {
+            // Fallback query if experience column doesn't exist in cache yet
+            await (supabase as any)
+              .from("profiles")
+              .update({
+                phone: regPhone,
+                address: regLocation
+              })
+              .eq("id", userId);
+          }
+        } catch (err) {
+          console.error("Resilient registration update failed:", err);
+        }
+
+        // 2. Save experience and defaults to local storage biodata
+        if (regRole === "petani") {
+          const biodata = {
+            experience: regExperience || "1 Tahun",
+            certification: "—",
+            bio: "Petani terdaftar di PANENKU+.",
+            focusArea: "Pertanian Umum"
+          };
+          localStorage.setItem(`panenku_farmer_biodata_${userId}`, JSON.stringify(biodata));
+        }
+
+        if (result.user.role === "petani") {
+          navigate({ to: "/farmer" });
+        } else {
+          navigate({ to: "/dashboard" });
+        }
       } else {
         setError(result.error || "Registrasi gagal");
       }
@@ -141,15 +212,12 @@ function LoginPage() {
             {/* Logo and Brand Info */}
             <div className="flex flex-col items-center text-center mb-6">
               <img
-                src={logoPanenku}
-                alt="PANENKU Logo"
-                className="h-28 w-28 object-contain mb-1"
+                src={logoRumohTani}
+                alt="RumohTani Logo"
+                className="h-16 object-contain mb-3"
               />
-              <h2 className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl font-black text-primary leading-none tracking-tight">
-                PANENKU+
-              </h2>
-              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-1">
-                Dari Belajar Bertani Hingga Menjual Hasil Panen
+              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
+                Platform Marketplace Pertanian Terintegrasi
               </p>
             </div>
 
@@ -291,28 +359,92 @@ function LoginPage() {
                   </div>
                 </div>
 
+                <div className="space-y-1.5">
+                  <Label htmlFor="reg-phone" className="text-xs font-bold text-muted-foreground uppercase">
+                    Nomor HP / WhatsApp
+                  </Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="reg-phone"
+                      type="text"
+                      placeholder="Contoh: 0812345678"
+                      value={regPhone}
+                      onChange={(e) => setRegPhone(e.target.value)}
+                      required
+                      className="pl-11 h-11.5 rounded-xl border-border/50 bg-[#e9eae6]/30 focus:bg-background focus:ring-primary focus:border-primary transition"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="reg-location" className="text-xs font-bold text-muted-foreground uppercase">
+                    Lokasi / Wilayah
+                  </Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="reg-location"
+                      type="text"
+                      placeholder="Contoh: Sukabumi, Jawa Barat"
+                      value={regLocation}
+                      onChange={(e) => setRegLocation(e.target.value)}
+                      required
+                      className="pl-11 h-11.5 rounded-xl border-border/50 bg-[#e9eae6]/30 focus:bg-background focus:ring-primary focus:border-primary transition"
+                    />
+                  </div>
+                </div>
+
+                {regRole === "petani" && (
+                  <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <Label htmlFor="reg-experience" className="text-xs font-bold text-muted-foreground uppercase">
+                      Lama Pengalaman Bertani
+                    </Label>
+                    <div className="relative">
+                      <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="reg-experience"
+                        type="text"
+                        placeholder="Contoh: 15 Tahun"
+                        value={regExperience}
+                        onChange={(e) => setRegExperience(e.target.value)}
+                        required
+                        className="pl-11 h-11.5 rounded-xl border-border/50 bg-[#e9eae6]/30 focus:bg-background focus:ring-primary focus:border-primary transition"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label className="text-xs font-bold text-muted-foreground uppercase">Daftar Sebagai</Label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
-                      onClick={() => setRegRole("customer")}
-                      className={`rounded-xl border py-2.5 text-xs font-bold transition ${regRole === "customer"
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border/60 bg-[#e9eae6]/20 hover:bg-muted text-muted-foreground"
+                      onClick={() => setRegRole("pembeli")}
+                      className={`rounded-2xl border p-3.5 text-left transition-all duration-300 flex flex-col justify-between h-28 relative overflow-hidden group ${regRole === "pembeli"
+                        ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/25 shadow-sm"
+                        : "border-border/60 bg-[#e9eae6]/10 hover:bg-[#e9eae6]/25 hover:border-border text-muted-foreground"
                         }`}
                     >
-                      🛒 Calon Petani / Pembeli
+                      <span className="text-2xl transition duration-300 group-hover:scale-110">🛒</span>
+                      <div>
+                        <div className="font-extrabold text-[11px] leading-tight uppercase tracking-wider">Pembeli (Buyer)</div>
+                        <div className="text-[9px] font-light opacity-80 leading-tight mt-1">Belanja panen, limbah, & konsultasi</div>
+                      </div>
                     </button>
                     <button
                       type="button"
-                      onClick={() => setRegRole("farmer")}
-                      className={`rounded-xl border py-2.5 text-xs font-bold transition ${regRole === "farmer"
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border/60 bg-[#e9eae6]/20 hover:bg-muted text-muted-foreground"
+                      onClick={() => setRegRole("petani")}
+                      className={`rounded-2xl border p-3.5 text-left transition-all duration-300 flex flex-col justify-between h-28 relative overflow-hidden group ${regRole === "petani"
+                        ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/25 shadow-sm"
+                        : "border-border/60 bg-[#e9eae6]/10 hover:bg-[#e9eae6]/25 hover:border-border text-muted-foreground"
                         }`}
                     >
-                      🌾 Petani Ahli
+                      <span className="text-2xl transition duration-300 group-hover:scale-110">🌾</span>
+                      <div>
+                        <div className="font-extrabold text-[11px] leading-tight uppercase tracking-wider">Penjual (Seller)</div>
+                        <div className="text-[9px] font-light opacity-80 leading-tight mt-1">Kelola toko, limbah, & konsultasi</div>
+                      </div>
                     </button>
                   </div>
                 </div>

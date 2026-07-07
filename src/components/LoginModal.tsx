@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth-context";
 import { Mail, Lock, User, Loader2, Eye, EyeOff } from "lucide-react";
-import logoPanenku from "@/assets/logo_panenku.png";
+import logoRumohTani from "@/assets/rumohtani_transparent.png";
 import farmingBg from "@/assets/farming_bg.png";
 
 interface LoginModalProps {
@@ -39,7 +39,7 @@ export function LoginModal({
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
-  const [regRole, setRegRole] = useState<"customer" | "farmer">("customer");
+  const [regRole, setRegRole] = useState<"petani" | "pembeli">("pembeli");
 
   const { login, register } = useAuth();
 
@@ -49,7 +49,7 @@ export function LoginModal({
     setRegName("");
     setRegEmail("");
     setRegPassword("");
-    setRegRole("customer");
+    setRegRole("pembeli");
     setError("");
     setShowPassword(false);
   };
@@ -121,13 +121,13 @@ export function LoginModal({
           <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
           <div className="relative z-10">
             <div className="mx-auto mb-4">
-              <img src={logoPanenku} alt="PANENKU Logo" className="h-16 w-16 mx-auto rounded-2xl object-contain bg-white/20 backdrop-blur p-1" />
+              <img src={logoRumohTani} alt="RumohTani Logo" className="h-12 mx-auto object-contain" />
             </div>
             <DialogHeader>
               <DialogTitle className="text-xl font-bold text-white drop-shadow-lg">
                 {tab === "login"
                   ? "Selamat Datang Kembali"
-                  : "Bergabung dengan PANENKU"}
+                  : "Bergabung dengan RumohTani"}
               </DialogTitle>
             </DialogHeader>
             <p className="mt-1 text-sm text-white/90 drop-shadow-md">
@@ -303,29 +303,31 @@ export function LoginModal({
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Daftar Sebagai</Label>
+                <Label className="text-xs font-bold text-muted-foreground uppercase">Daftar Sebagai</Label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setRegRole("customer")}
-                    className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition ${
-                      regRole === "customer"
+                    onClick={() => setRegRole("pembeli")}
+                    className={`rounded-xl border p-2 text-center transition flex flex-col items-center justify-center gap-1 min-h-[70px] ${
+                      regRole === "pembeli"
                         ? "border-primary bg-primary/10 text-primary"
-                        : "border-border hover:bg-muted"
+                        : "border-border bg-[#e9eae6]/10 hover:bg-muted text-muted-foreground"
                     }`}
                   >
-                    🛒 Pembeli
+                    <span className="text-lg">🛒</span>
+                    <span className="text-[10px] font-bold uppercase tracking-tight">Pembeli</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => setRegRole("farmer")}
-                    className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition ${
-                      regRole === "farmer"
+                    onClick={() => setRegRole("petani")}
+                    className={`rounded-xl border p-2 text-center transition flex flex-col items-center justify-center gap-1 min-h-[70px] ${
+                      regRole === "petani"
                         ? "border-primary bg-primary/10 text-primary"
-                        : "border-border hover:bg-muted"
+                        : "border-border bg-[#e9eae6]/10 hover:bg-muted text-muted-foreground"
                     }`}
                   >
-                    🌾 Petani
+                    <span className="text-lg">🌾</span>
+                    <span className="text-[10px] font-bold uppercase tracking-tight text-center leading-none">Penjual</span>
                   </button>
                 </div>
               </div>

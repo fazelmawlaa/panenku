@@ -1,16 +1,30 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from '@tanstack/react-router'
+import { useState, useEffect } from "react";
+import { fetchProductsFromSupabase } from "@/lib/products-db";
+import { type Product, wasteCategories, buyerTypes } from "@/lib/mock-data";
+import { Recycle, Leaf, Factory, Sparkles, Loader2 } from "lucide-react";
 import { CustomerLayout } from "@/components/layout/CustomerLayout";
 import { ProductCard } from "@/components/ProductCard";
-import { products, wasteCategories, buyerTypes } from "@/lib/mock-data";
-import { Recycle, Leaf, Factory, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/waste")({
-  head: () => ({ meta: [{ title: "Limbah Pertanian — PANENKU" }, { name: "description", content: "Marketplace limbah pertanian untuk ekonomi sirkular. Sekam padi, kulit kopi, batok kelapa, dan lainnya." }] }),
+  head: () => ({ meta: [{ title: "Limbah Pertanian — RumohTani" }, { name: "description", content: "Marketplace limbah pertanian untuk ekonomi sirkular. Sekam padi, kulit kopi, batok kelapa, dan lainnya." }] }),
   component: WastePage,
 });
 
 function WastePage() {
-  const waste = products.filter((p) => p.type === "waste");
+  const [wasteList, setWasteList] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadWaste = async () => {
+      setIsLoading(true);
+      const data = await fetchProductsFromSupabase();
+      const filtered = data.filter((p) => p.type === "waste");
+      setWasteList(filtered);
+      setIsLoading(false);
+    };
+    loadWaste();
+  }, []);
 
   return (
     <CustomerLayout>
@@ -58,9 +72,23 @@ function WastePage() {
       {/* Products */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 pb-16">
         <h2 className="font-display text-2xl font-bold mb-5">Limbah Tersedia</h2>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {waste.map((p) => <ProductCard key={p.id} product={p} />)}
-        </div>
+        
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+            <p className="text-sm text-muted-foreground">Memuat katalog limbah pertanian...</p>
+          </div>
+        ) : wasteList.length === 0 ? (
+          <div className="text-center py-16 border rounded-2xl bg-background/50">
+            <div className="text-4xl mb-3">🍂</div>
+            <h3 className="font-bold text-lg mb-1">Belum Ada Limbah Pertanian</h3>
+            <p className="text-sm text-muted-foreground">Silakan periksa kembali nanti atau unggah limbah pertanian Anda sendiri.</p>
+          </div>
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {wasteList.map((p) => <ProductCard key={p.id} product={p} />)}
+          </div>
+        )}
       </section>
     </CustomerLayout>
   );

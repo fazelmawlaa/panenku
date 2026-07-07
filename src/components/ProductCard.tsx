@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { MapPin, Star, Sprout, Package, Recycle } from "lucide-react";
+import { MapPin, Star, Sprout, Package, Recycle, Wrench } from "lucide-react";
 import { formatRupiah, type Product } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
 
@@ -7,16 +7,18 @@ const typeMeta: Record<Product["type"], { label: string; icon: any; cls: string 
   preorder: { label: "Pre-Order", icon: Sprout, cls: "bg-primary/10 text-primary border-primary/20" },
   ready: { label: "Ready Stock", icon: Package, cls: "bg-honey/15 text-foreground border-honey/30" },
   waste: { label: "Limbah", icon: Recycle, cls: "bg-earth/10 text-earth border-earth/20" },
+  tools: { label: "Alat Tani", icon: Wrench, cls: "bg-blue-500/10 text-blue-700 border-blue-500/20" },
 };
 
 export function ProductCard({ product }: { product: Product }) {
   const meta = typeMeta[product.type];
   const Icon = meta.icon;
+
   return (
     <Link
       to="/products/$id"
       params={{ id: product.id }}
-      className="group glass-card rounded-2xl overflow-hidden flex flex-col hover:shadow-glow transition-all hover:-translate-y-1"
+      className="group glass-card rounded-2xl overflow-hidden flex flex-col hover:shadow-glow transition-all hover:-translate-y-1 cursor-pointer"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
         <img
@@ -33,15 +35,15 @@ export function ProductCard({ product }: { product: Product }) {
         </div>
       </div>
       <div className="p-4 flex flex-col gap-2 flex-1">
-        <h3 className="font-semibold leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+        <h3 className="font-semibold leading-snug line-clamp-2 group-hover:text-primary transition-colors text-left text-foreground">
           {product.name}
         </h3>
-        <div className="text-xs text-muted-foreground flex items-center gap-1">
+        <div className="text-xs text-muted-foreground flex items-center gap-1 text-left">
           <MapPin className="h-3 w-3" /> {product.location}
         </div>
-        <div className="text-xs text-foreground/70">oleh <span className="font-medium">{product.farmer}</span></div>
+        <div className="text-xs text-foreground/70 text-left">oleh <span className="font-medium">{product.farmer}</span></div>
         {product.type === "preorder" && product.ordered !== undefined && (
-          <div className="mt-1">
+          <div className="mt-1 text-left">
             <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
               <span>Terpesan {product.ordered} kg</span>
               <span>{product.stock} kg</span>
@@ -52,7 +54,7 @@ export function ProductCard({ product }: { product: Product }) {
           </div>
         )}
         <div className="mt-auto pt-2 flex items-end justify-between">
-          <div>
+          <div className="text-left">
             <div className="font-display text-lg font-bold text-primary">{formatRupiah(product.price)}</div>
             <div className="text-[10px] text-muted-foreground">per {product.unit}</div>
           </div>

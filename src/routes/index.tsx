@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import {
   ShoppingBag, Sprout, Recycle, TrendingUp, FileSignature, Leaf,
   ArrowRight, CheckCircle2, Star, Quote, ChevronRight,
@@ -11,14 +11,12 @@ import {
   LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid,
 } from "recharts";
 
+import { createFileRoute, redirect } from "@tanstack/react-router";
+
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "PANENKU — Dari Petani, Untuk Indonesia" },
-      { name: "description", content: "Marketplace hasil panen Indonesia. Pre-order panen, ready stock, dan limbah pertanian dalam satu platform." },
-    ],
-  }),
-  component: Home,
+  beforeLoad: () => {
+    throw redirect({ to: "/products" });
+  },
 });
 
 const features = [

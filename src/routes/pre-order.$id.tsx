@@ -10,13 +10,15 @@ import { Label } from "@/components/ui/label";
 import { Calendar, Sprout, Users, TrendingUp, Shield, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
+import { fetchProductDetail } from "@/lib/products-db";
+
 export const Route = createFileRoute("/pre-order/$id")({
-  loader: ({ params }) => {
-    const p = products.find((x) => x.id === params.id);
-    if (!p) throw notFound();
-    return p;
+  loader: async ({ params }) => {
+    const details = await fetchProductDetail(params.id);
+    if (!details || !details.product) throw notFound();
+    return details.product;
   },
-  head: ({ loaderData }) => ({ meta: [{ title: `Pre-Order ${loaderData?.name} — PANENKU` }] }),
+  head: ({ loaderData }) => ({ meta: [{ title: `Pre-Order ${loaderData?.name} — RumohTani` }] }),
   component: PreOrderPage,
 });
 
@@ -111,7 +113,7 @@ function PreOrderPage() {
               </div>
               <label className="flex items-start gap-3 text-sm cursor-pointer">
                 <Checkbox checked={agree} onCheckedChange={(v) => setAgree(!!v)} className="mt-0.5" />
-                <span>Saya menyetujui <a className="text-primary underline">kontrak digital</a>, kebijakan deposit 30%, dan ketentuan PANENKU.</span>
+                <span>Saya menyetujui <a className="text-primary underline">kontrak digital</a>, kebijakan deposit 30%, dan ketentuan RumohTani.</span>
               </label>
             </div>
           </div>
@@ -136,7 +138,7 @@ function PreOrderPage() {
                 <Sprout className="h-4 w-4" /> Konfirmasi Pre-Order
               </Button>
               <div className="flex items-center gap-2 text-xs text-muted-foreground justify-center">
-                <Shield className="h-3 w-3" /> Dilindungi PANENKU Protection
+                <Shield className="h-3 w-3" /> Dilindungi RumohTani Protection
               </div>
             </div>
             <div className="glass-card rounded-2xl p-4 flex items-center gap-3">
