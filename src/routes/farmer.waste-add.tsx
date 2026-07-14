@@ -106,8 +106,17 @@ function AddWaste() {
         const raw = localStorage.getItem(`panenku_farmer_biodata_${user.id}`);
         if (raw) lsBio = JSON.parse(raw);
       } catch (e) { /* ignore */ }
-      const hasKtp = lsBio.ktpNumber && lsBio.ktpNumber.length === 16;
-      const hasKtpDb = profile?.ktp_number && profile.ktp_number.trim().length === 16;
+
+      let isKtpVerifiedFromDbAddress = false;
+      if (profile?.address && profile.address.trim().startsWith("{")) {
+        try {
+          const parsed = JSON.parse(profile.address);
+          isKtpVerifiedFromDbAddress = !!parsed.is_verified || (parsed.ktp_number && String(parsed.ktp_number).length === 16);
+        } catch (e) {}
+      }
+
+      const hasKtp = lsBio.ktpNumber && String(lsBio.ktpNumber).length === 16;
+      const hasKtpDb = (profile?.ktp_number && profile.ktp_number.trim().length === 16) || isKtpVerifiedFromDbAddress;
       setIsVerified(verifiedFlag === "true" || !!hasKtp || !!hasKtpDb);
     }
   }, [user, profile]);

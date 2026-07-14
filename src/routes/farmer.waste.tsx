@@ -226,46 +226,46 @@ function WasteDashboard() {
                   Belum ada inventori limbah terdaftar. Silakan klik "Tambah Limbah" untuk mulai menawarkan.
                 </div>
               ) : (
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                   {list.map((w) => (
-                    <div key={w.id} className="border border-border/40 rounded-[2rem] overflow-hidden hover:border-primary/20 hover:shadow-soft transition-all duration-300 flex flex-col justify-between p-5 text-left bg-secondary/10">
+                    <div key={w.id} className="border border-border/40 rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden hover:border-primary/20 hover:shadow-soft transition-all duration-300 flex flex-col justify-between p-3 sm:p-5 text-left bg-secondary/10">
                       <div>
-                        <div className="flex items-center gap-3 mb-4">
-                          <img src={w.image} className="h-14 w-14 rounded-2xl object-cover border border-border/40 shadow-sm" alt={w.name} />
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                          <img src={w.image} className="h-10 w-10 sm:h-14 sm:w-14 rounded-xl sm:rounded-2xl object-cover border border-border/40 shadow-sm shrink-0" alt={w.name} />
                           <div className="min-w-0">
-                            <h3 className="font-bold text-base text-foreground truncate">{w.name}</h3>
-                            <Badge className="bg-primary/10 text-emerald-800 border-primary/20 font-bold text-[9px] uppercase px-2 py-0.5 mt-1 rounded-full">
+                            <h3 className="font-bold text-xs sm:text-base text-foreground truncate">{w.name}</h3>
+                            <Badge className="bg-primary/10 text-emerald-800 border-primary/20 font-bold text-[7px] sm:text-[9px] uppercase px-1.5 py-0.5 sm:px-2 mt-0.5 rounded-full">
                               Limbah Tani
                             </Badge>
                           </div>
                         </div>
 
-                        <div className="space-y-2.5 text-xs pt-3 border-t border-border/20">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Volume Stok:</span>
+                        <div className="space-y-1.5 sm:space-y-2.5 text-[10px] sm:text-xs pt-2 sm:pt-3 border-t border-border/20">
+                          <div className="flex justify-between flex-wrap gap-1">
+                            <span className="text-muted-foreground">Volume:</span>
                             <span className="font-bold text-foreground">{w.stock} {w.unit || "kg"}</span>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Harga Penawaran:</span>
+                          <div className="flex justify-between flex-wrap gap-1">
+                            <span className="text-muted-foreground">Harga:</span>
                             <span className="font-black text-primary">{formatRupiah(w.price)}/{w.unit || "kg"}</span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex gap-2 mt-6 pt-4 border-t border-border/40">
+                      <div className="flex items-center gap-1.5 mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-border/40">
                         <Button
                           onClick={() => handleEditClick(w)}
                           variant="outline"
                           size="sm"
-                          className="rounded-full flex-1 gap-1 text-[11px] font-bold"
+                          className="rounded-full flex-1 gap-1 text-[9px] sm:text-[11px] font-bold h-8 px-2"
                         >
-                          <Edit3 className="h-3.5 w-3.5" /> Edit
+                          <Edit3 className="h-3.5 w-3.5 shrink-0" /> Edit
                         </Button>
                         <Button
                           onClick={() => handleDelete(w.id)}
                           variant="outline"
                           size="icon"
-                          className="rounded-full text-destructive border-destructive/20 hover:bg-destructive/10 shrink-0 h-9 w-9"
+                          className="rounded-full text-destructive border-destructive/20 hover:bg-destructive/10 shrink-0 h-8 w-8"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>

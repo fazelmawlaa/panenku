@@ -16,7 +16,7 @@ export const Route = createFileRoute("/farmer/profile-edit")({
 });
 
 function EditProfilePage() {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshSession } = useAuth();
   const navigate = useNavigate();
 
   // Editable fields
@@ -47,7 +47,15 @@ function EditProfilePage() {
     } catch (e) { /* ignore */ }
 
     const val = (dbVal: string | null | undefined, lsKey: string, fallback = "") => {
-      if (dbVal && dbVal !== "-" && dbVal !== "—") return dbVal;
+      if (dbVal && dbVal !== "-" && dbVal !== "—") {
+        if (dbVal.trim().startsWith("{")) {
+          try {
+            const parsed = JSON.parse(dbVal);
+            return parsed.addressText || fallback;
+          } catch (e) {}
+        }
+        return dbVal;
+      }
       if (lsBio[lsKey] && lsBio[lsKey] !== "-" && lsBio[lsKey] !== "—") return lsBio[lsKey];
       return fallback;
     };
@@ -108,11 +116,19 @@ function EditProfilePage() {
               .eq("id", user.id)
               .maybeSingle();
 
+            let parsed: any = {};
             if (currentProfile?.address && currentProfile.address.trim().startsWith("{")) {
-              const parsed = JSON.parse(currentProfile.address);
-              parsed.addressText = location;
-              finalAddress = JSON.stringify(parsed);
+              parsed = JSON.parse(currentProfile.address);
             }
+            
+            parsed.addressText = location;
+            parsed.experience = experience;
+            parsed.focus_area = focusArea;
+            parsed.certification = certification;
+            parsed.bio = bio;
+            parsed.phone = phone; // Include phone inside config too
+            
+            finalAddress = JSON.stringify(parsed);
           } catch (e) {
             console.warn("Failed to preserve consultations JSON in profile edit:", e);
           }
@@ -167,6 +183,7 @@ function EditProfilePage() {
         console.warn("Failed to save biodata to localStorage due to quota limits", e);
       }
 
+      await refreshSession();
       toast.success("Profil Penjual berhasil diperbarui!");
       navigate({ to: "/farmer/profile" });
     } catch (err: any) {

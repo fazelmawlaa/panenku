@@ -192,7 +192,19 @@ async function fetchFromProfile(userId: string): Promise<ShippingAddress[]> {
 
     const addrStr = data.address || "";
     
-    // Check if the address column is a serialized JSON array
+    // Check if the address column is a JSON config object containing shipping_addresses
+    if (addrStr.trim().startsWith("{")) {
+      try {
+        const config = JSON.parse(addrStr);
+        if (config.shipping_addresses && Array.isArray(config.shipping_addresses)) {
+          return (config.shipping_addresses as ShippingAddress[]).sort((a, b) => (a.is_default === b.is_default ? 0 : a.is_default ? -1 : 1));
+        }
+      } catch (e) {
+        console.warn("Failed to parse JSON config object for shipping_addresses", e);
+      }
+    }
+    
+    // Check if the address column is a serialized JSON array directly
     if (addrStr.trim().startsWith("[") && addrStr.trim().endsWith("]")) {
       try {
         const list = JSON.parse(addrStr) as ShippingAddress[];
@@ -261,7 +273,30 @@ async function fetchFromProfile(userId: string): Promise<ShippingAddress[]> {
 
 async function saveToProfile(userId: string, list: ShippingAddress[]): Promise<void> {
   try {
-    const serialized = JSON.stringify(list);
+    const { data: currentP } = await supabase
+      .from("profiles")
+      .select("address")
+      .eq("id", userId)
+      .maybeSingle();
+
+    let config: any = {};
+    if (currentP?.address && currentP.address.trim().startsWith("{")) {
+      try {
+        config = JSON.parse(currentP.address);
+      } catch (e) {}
+    } else if (currentP?.address && !currentP.address.trim().startsWith("[")) {
+      config.addressText = currentP.address;
+    }
+
+    config.shipping_addresses = list;
+
+    // Set addressText to default shipping address formatted for display if config addressText is empty
+    const def = list.find(a => a.is_default) || list[0];
+    if (def) {
+      config.addressText = `${def.city}`;
+    }
+
+    const serialized = JSON.stringify(config);
     await supabase
       .from("profiles")
       .update({ address: serialized })

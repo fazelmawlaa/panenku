@@ -280,99 +280,101 @@ function ProductManagement() {
                 Belum ada produk hasil panen terdaftar. Silakan klik "Tambah Produk" untuk mulai menjual.
               </div>
             ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredList.map((p) => {
-              const isPreorder = p.type === "preorder";
-              return (
-                <div key={p.id} className="bg-white border border-border/40 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-soft hover:scale-[1.01] transition-all duration-300 flex flex-col text-left">
-                  <div className="h-44 relative bg-secondary">
-                    <img src={p.image} className="h-full w-full object-cover" alt={p.name} />
-                    <div className="absolute top-4 left-4">
-                      <Badge className={`rounded-full px-3 py-1 font-bold text-[9px] uppercase tracking-wider ${
-                        isPreorder 
-                          ? "bg-[#b4f05a] hover:bg-[#b4f05a]/90 text-emerald-900 border-[#b4f05a]/50" 
-                          : "bg-emerald-600 hover:bg-emerald-700 text-white"
-                      }`}>
-                        {isPreorder ? "🌾 Pre-Order" : "📦 Ready Stock"}
-                      </Badge>
-                    </div>
-                    <div className="absolute top-4 right-4">
-                      <Badge className="bg-black/60 text-white rounded-full text-[9px] uppercase font-bold px-2.5 py-0.5 backdrop-blur-sm">
-                        {p.category}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <div className="p-6 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="font-['Plus_Jakarta_Sans',sans-serif] font-black text-lg text-foreground truncate">{p.name}</h3>
-                      <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
-                        <span>Budidaya: {p.cultivation || "Organik"}</span>
-                      </div>
-                      
-                      <div className="mt-4 pt-3 border-t border-border/30 grid grid-cols-2 gap-3 text-xs">
-                        <div>
-                          <span className="text-muted-foreground block text-[10px] uppercase font-bold">Harga per kg</span>
-                          <span className="font-extrabold text-primary text-base mt-0.5 block">{formatRupiah(p.price)}</span>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+                {filteredList.map((p) => {
+                  const isPreorder = p.type === "preorder";
+                  return (
+                    <div key={p.id} className="bg-white border border-border/40 rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden shadow-sm hover:shadow-soft hover:scale-[1.01] transition-all duration-300 flex flex-col text-left">
+                      <div className="h-28 sm:h-44 relative bg-secondary">
+                        <img src={p.image} className="h-full w-full object-cover" alt={p.name} />
+                        <div className="absolute top-2 left-2 sm:top-4 sm:left-4">
+                          <Badge className={`rounded-full px-2 py-0.5 sm:px-3 sm:py-1 font-bold text-[7px] sm:text-[9px] uppercase tracking-wider ${
+                            isPreorder 
+                              ? "bg-[#b4f05a] hover:bg-[#b4f05a]/90 text-emerald-900 border-[#b4f05a]/50" 
+                              : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                          }`}>
+                            {isPreorder ? "🌾 PO" : "📦 Ready"}
+                          </Badge>
                         </div>
-                        <div>
-                          <span className="text-muted-foreground block text-[10px] uppercase font-bold">
-                            {isPreorder ? "Estimasi Stok" : "Stok Tersedia"}
-                          </span>
-                          <span className="font-bold text-foreground mt-0.5 block">{p.stock} {p.unit || "kg"}</span>
+                        <div className="absolute top-2 right-2 sm:top-4 sm:right-4">
+                          <Badge className="bg-black/60 text-white rounded-full text-[7px] sm:text-[9px] uppercase font-bold px-1.5 py-0.5 sm:px-2.5 backdrop-blur-sm">
+                            {p.category}
+                          </Badge>
                         </div>
                       </div>
 
-                      {isPreorder && (
-                        <div className="mt-4 p-3 rounded-xl bg-amber-500/5 border border-amber-500/10 text-[11px] text-amber-900 flex items-center gap-2">
-                          <Sprout className="h-4 w-4 text-amber-600 shrink-0" />
-                          <span>Estimasi Panen: <span className="font-bold">{p.estimated_harvest || "Segera"}</span></span>
-                        </div>
-                      )}
-                    </div>
+                      <div className="p-3 sm:p-6 flex-1 flex flex-col justify-between">
+                        <div>
+                          <h3 className="font-['Plus_Jakarta_Sans',sans-serif] font-black text-sm sm:text-lg text-foreground truncate">{p.name}</h3>
+                          <div className="flex items-center gap-2 mt-1 sm:mt-1.5 text-[9px] sm:text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                            <span>Budidaya: {p.cultivation || "Organik"}</span>
+                          </div>
+                          
+                          <div className="mt-2.5 sm:mt-4 pt-2 sm:pt-3 border-t border-border/30 grid grid-cols-2 gap-2 sm:gap-3 text-[10px] sm:text-xs">
+                            <div>
+                              <span className="text-muted-foreground block text-[8px] sm:text-[10px] uppercase font-bold">Harga per kg</span>
+                              <span className="font-extrabold text-primary text-xs sm:text-base mt-0.5 block">{formatRupiah(p.price)}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground block text-[8px] sm:text-[10px] uppercase font-bold">
+                                {isPreorder ? "Estimasi Stok" : "Stok Tersedia"}
+                              </span>
+                              <span className="font-bold text-foreground mt-0.5 block">{p.stock} {p.unit || "kg"}</span>
+                            </div>
+                          </div>
 
-                    <div className="flex gap-2 mt-6 pt-4 border-t border-border/40">
-                      <Button 
-                        onClick={() => handleEditClick(p)}
-                        variant="outline" 
-                        size="sm" 
-                        className="rounded-full flex-1 gap-1 text-[11px] font-bold"
-                      >
-                        <Edit3 className="h-3.5 w-3.5" /> Edit
-                      </Button>
-                      {archivedIds.includes(p.id) ? (
-                        <Button 
-                          onClick={() => handleRestore(p.id)}
-                          variant="outline" 
-                          size="sm" 
-                          className="rounded-full flex-1 gap-1 text-[11px] font-bold text-emerald-700 border-emerald-200 hover:bg-emerald-50"
-                        >
-                          <Archive className="h-3.5 w-3.5" /> Pulihkan
-                        </Button>
-                      ) : (
-                        <Button 
-                          onClick={() => handleArchive(p.id)}
-                          variant="outline" 
-                          size="sm" 
-                          className="rounded-full flex-1 gap-1 text-[11px] font-bold"
-                        >
-                          <Archive className="h-3.5 w-3.5" /> Arsipkan
-                        </Button>
-                      )}
-                      <Button 
-                        onClick={() => handleDelete(p.id)}
-                        variant="outline" 
-                        size="icon" 
-                        className="rounded-full text-destructive border-destructive/20 hover:bg-destructive/10 shrink-0 h-9 w-9"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                  </div>
-                </div>
+                          {isPreorder && (
+                            <div className="mt-2.5 sm:mt-4 p-2 sm:p-3 rounded-xl bg-amber-500/5 border border-amber-500/10 text-[9px] sm:text-[11px] text-amber-900 flex items-center gap-1.5 sm:gap-2">
+                              <Sprout className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                              <span>Panen: <span className="font-bold">{p.estimated_harvest || "Segera"}</span></span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-border/40">
+                          <Button 
+                            onClick={() => handleEditClick(p)}
+                            variant="outline" 
+                            size="sm" 
+                            className="rounded-full flex-1 gap-1 text-[9px] sm:text-[11px] font-bold h-8 px-2"
+                          >
+                            <Edit3 className="h-3.5 w-3.5 shrink-0" /> Edit
+                          </Button>
+                          {archivedIds.includes(p.id) ? (
+                            <Button 
+                              onClick={() => handleRestore(p.id)}
+                              variant="outline" 
+                              size="sm" 
+                              className="rounded-full flex-1 gap-1 text-[9px] sm:text-[11px] font-bold text-emerald-700 border-emerald-200 hover:bg-emerald-50 h-8 px-2"
+                            >
+                              <Archive className="h-3.5 w-3.5 shrink-0" /> Buka
+                            </Button>
+                          ) : (
+                            <Button 
+                              onClick={() => handleArchive(p.id)}
+                              variant="outline" 
+                              size="sm" 
+                              className="rounded-full flex-1 gap-1 text-[9px] sm:text-[11px] font-bold h-8 px-2"
+                            >
+                              <Archive className="h-3.5 w-3.5 shrink-0" /> Arsip
+                            </Button>
+                          )}
+                          <Button 
+                            onClick={() => handleDelete(p.id)}
+                            variant="outline" 
+                            size="icon" 
+                            className="rounded-full text-destructive border-destructive/20 hover:bg-destructive/10 shrink-0 h-8 w-8"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
+            )}
+          </>
         )}
         </>
       )}

@@ -60,7 +60,15 @@ function ProfilePage() {
     } catch (e) { /* ignore */ }
 
     const val = (dbVal: string | null | undefined, lsKey: string) => {
-      if (dbVal && dbVal !== "-") return dbVal;
+      if (dbVal && dbVal !== "-") {
+        if (dbVal.trim().startsWith("{")) {
+          try {
+            const parsed = JSON.parse(dbVal);
+            return parsed.addressText || "-";
+          } catch (e) {}
+        }
+        return dbVal;
+      }
       if (lsBio[lsKey] && lsBio[lsKey] !== "-" && lsBio[lsKey] !== "—") return lsBio[lsKey];
       return "-";
     };
@@ -74,8 +82,16 @@ function ProfilePage() {
     setBio(val(profile?.bio, "bio"));
     setAvatarUrl(profile?.avatar_url || localStorage.getItem(`panenku_avatar_${user.id}`) || "");
 
-    const hasKtpDb = profile?.ktp_number && profile.ktp_number !== "-";
-    const hasKtpLs = lsBio.ktpNumber && lsBio.ktpNumber.length === 16;
+    let isKtpVerifiedFromDbAddress = false;
+    if (profile?.address && profile.address.trim().startsWith("{")) {
+      try {
+        const parsed = JSON.parse(profile.address);
+        isKtpVerifiedFromDbAddress = !!parsed.is_verified || (parsed.ktp_number && String(parsed.ktp_number).length === 16);
+      } catch (e) {}
+    }
+
+    const hasKtpDb = (profile?.ktp_number && profile.ktp_number !== "-") || isKtpVerifiedFromDbAddress;
+    const hasKtpLs = lsBio.ktpNumber && String(lsBio.ktpNumber).length === 16;
     const verifiedFlag = localStorage.getItem(`panenku_farmer_verified_${user.id}`);
     setIsVerified(!!hasKtpDb || !!hasKtpLs || verifiedFlag === "true");
   }, [user, profile]);

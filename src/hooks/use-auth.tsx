@@ -24,6 +24,7 @@ type AuthContextValue = {
   profile: Profile;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshSession: () => Promise<void>;
 };
 
 const AuthCtx = createContext<AuthContextValue | undefined>(undefined);
@@ -141,6 +142,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setProfile(p as any);
       }
+
+      // Sync local storage state from profiles.address if it contains JSON config
+      const syncAddressVal = p?.address;
+      if (syncAddressVal && syncAddressVal.trim().startsWith("{")) {
+        try {
+          const config = JSON.parse(syncAddressVal);
+          if (config.is_verified) {
+            localStorage.setItem(`panenku_farmer_verified_${userId}`, "true");
+          }
+          const biodata = {
+            ktpNumber: config.ktp_number || "",
+            ktpPhoto: config.ktp_photo || "",
+            ktpName: config.ktp_name || "",
+            ktpAddress: config.ktp_address || "",
+            birthPlaceDate: config.birth_place_date || "",
+            gender: config.gender || "",
+            phone: config.phone || "",
+            location: config.addressText || "",
+            experience: config.experience || "",
+            certification: config.certification || "",
+            bio: config.bio || "",
+            focusArea: config.focus_area || ""
+          };
+          localStorage.setItem(`panenku_farmer_biodata_${userId}`, JSON.stringify(biodata));
+          if (config.avatar_url) {
+            localStorage.setItem(`panenku_avatar_${userId}`, config.avatar_url);
+          }
+        } catch (e) {
+          console.warn("Failed to sync profiles.address JSON to localStorage", e);
+        }
+      }
     } catch (e) {
       // Final fallback query
       const { data: stdP } = await supabase
@@ -162,6 +194,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ktp_photo: "-",
           avatar_url: ""
         });
+
+        // Also check if stdP.address is JSON to sync in catch block
+        if (stdP.address && stdP.address.trim().startsWith("{")) {
+          try {
+            const config = JSON.parse(stdP.address);
+            if (config.is_verified) {
+              localStorage.setItem(`panenku_farmer_verified_${userId}`, "true");
+            }
+            const biodata = {
+              ktpNumber: config.ktp_number || "",
+              ktpPhoto: config.ktp_photo || "",
+              ktpName: config.ktp_name || "",
+              ktpAddress: config.ktp_address || "",
+              birthPlaceDate: config.birth_place_date || "",
+              gender: config.gender || "",
+              phone: config.phone || "",
+              location: config.addressText || "",
+              experience: config.experience || "",
+              certification: config.certification || "",
+              bio: config.bio || "",
+              focusArea: config.focus_area || ""
+            };
+            localStorage.setItem(`panenku_farmer_biodata_${userId}`, JSON.stringify(biodata));
+            if (config.avatar_url) {
+              localStorage.setItem(`panenku_avatar_${userId}`, config.avatar_url);
+            }
+          } catch (err) {
+            console.warn("Failed to sync profiles.address JSON to localStorage in catch block", err);
+          }
+        }
       } else {
         setProfile(null);
       }
@@ -175,8 +237,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   }
 
+  async function refreshSession() {
+    if (session?.user?.id) {
+      await loadUserData(session.user.id);
+    }
+  }
+
   return (
-    <AuthCtx.Provider value={{ session, user: session?.user ?? null, role, profile, loading, signOut }}>
+    <AuthCtx.Provider value={{ session, user: session?.user ?? null, role, profile, loading, signOut, refreshSession }}>
       {children}
     </AuthCtx.Provider>
   );

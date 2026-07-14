@@ -589,11 +589,28 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
       });
 
       if (shouldBeDefault && newAddr) {
-        // Also update profiles.address with the compiled address for compatibility
+        // Fetch current address config first to preserve keys
+        const { data: currentP } = await supabase
+          .from("profiles")
+          .select("address")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        let config: any = {};
+        if (currentP?.address && currentP.address.trim().startsWith("{")) {
+          try {
+            config = JSON.parse(currentP.address);
+          } catch (e) {}
+        } else if (currentP?.address && !currentP.address.trim().startsWith("[")) {
+          config.addressText = currentP.address;
+        }
+
         const compiledAddress = `${addressStreet}, ${addressDetails ? addressDetails + ", " : ""}Kec. ${tempSubdistrict.name}, Kota ${tempCity.name}, Prov. ${tempProvince.name}, ${tempPostalCode} (Penerima: ${addressRecipientName}, Telp: ${addressRecipientPhone})`;
+        config.addressText = compiledAddress;
+
         await supabase
           .from("profiles")
-          .update({ address: compiledAddress })
+          .update({ address: JSON.stringify(config) })
           .eq("id", user.id);
 
         const fields = {
@@ -635,10 +652,28 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
 
       // Also update profiles.address with default address for compatibility
       if (updated) {
+        // Fetch current address config first to preserve keys
+        const { data: currentP } = await supabase
+          .from("profiles")
+          .select("address")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        let config: any = {};
+        if (currentP?.address && currentP.address.trim().startsWith("{")) {
+          try {
+            config = JSON.parse(currentP.address);
+          } catch (e) {}
+        } else if (currentP?.address && !currentP.address.trim().startsWith("[")) {
+          config.addressText = currentP.address;
+        }
+
         const compiledAddress = `${updated.street_address}, ${updated.details ? updated.details + ", " : ""}Kec. ${updated.district}, Kota ${updated.city}, Prov. ${updated.province}, ${updated.postal_code} (Penerima: ${updated.recipient_name}, Telp: ${updated.recipient_phone})`;
+        config.addressText = compiledAddress;
+
         await supabase
           .from("profiles")
-          .update({ address: compiledAddress })
+          .update({ address: JSON.stringify(config) })
           .eq("id", user.id);
       }
 

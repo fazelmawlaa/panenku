@@ -17,7 +17,7 @@ export const Route = createFileRoute("/farmer/verify")({
 });
 
 function FarmerVerificationPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshSession } = useAuth();
   const navigate = useNavigate();
 
   const [ktpNumber, setKtpNumber] = useState("");
@@ -40,7 +40,15 @@ function FarmerVerificationPage() {
     } catch (e) { /* ignore */ }
 
     const val = (dbVal: string | null | undefined, lsVal: string | undefined, fallback = "") => {
-      if (dbVal && dbVal !== "-" && dbVal !== "—") return dbVal;
+      if (dbVal && dbVal !== "-" && dbVal !== "—") {
+        if (dbVal.trim().startsWith("{")) {
+          try {
+            const parsed = JSON.parse(dbVal);
+            return parsed.addressText || fallback;
+          } catch (e) {}
+        }
+        return dbVal;
+      }
       if (lsVal && lsVal !== "-" && lsVal !== "—") return lsVal;
       return fallback;
     };
@@ -91,25 +99,54 @@ function FarmerVerificationPage() {
 
     setIsSaving(true);
     try {
-      // 1. Update database profile with KTP details
+      // 1. Fetch current profile address to merge JSON metadata safely
+      let mergedAddressJson = ktpAddress;
+      try {
+        const { data: currentP } = await supabase
+          .from("profiles")
+          .select("address")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        let parsed: any = {};
+        if (currentP?.address && currentP.address.trim().startsWith("{")) {
+          parsed = JSON.parse(currentP.address);
+        } else if (currentP?.address) {
+          parsed.addressText = currentP.address;
+        }
+        
+        parsed.addressText = ktpAddress;
+        parsed.ktp_number = ktpNumber;
+        parsed.ktp_name = ktpName;
+        parsed.ktp_address = ktpAddress;
+        parsed.birth_place_date = birthPlaceDate;
+        parsed.gender = gender;
+        parsed.is_verified = true;
+        
+        mergedAddressJson = JSON.stringify(parsed);
+      } catch (err) {
+        console.warn("Failed to load/parse profiles address JSON during verify", err);
+      }
+
+      // 2. Update database profile with KTP details (with mirror json backup)
       const { error } = await supabase
         .from("profiles")
         .update({
           ktp_number: ktpNumber,
           ktp_photo: ktpPhoto,
           full_name: ktpName, // Sync name with KTP name
-          address: ktpAddress, // Sync address with KTP address
+          address: mergedAddressJson, // Sync address with merged config
         })
         .eq("id", user.id);
 
       if (error) {
-        // If columns don't exist in Supabase schema cache yet, fall back to updating standard fields
+        // If columns don't exist in Supabase schema cache yet, fall back to updating standard fields with JSON address
         if (error.message.includes("column") || error.message.includes("cache") || error.message.includes("ktp_number")) {
           const { error: fallbackError } = await supabase
             .from("profiles")
             .update({
               full_name: ktpName,
-              address: ktpAddress,
+              address: mergedAddressJson,
             })
             .eq("id", user.id);
 
@@ -148,6 +185,7 @@ function FarmerVerificationPage() {
         console.warn("Failed to save biodata to localStorage due to quota limits", e);
       }
 
+      await refreshSession();
       toast.success("Akun Penjual berhasil diverifikasi KTP!");
       navigate({ to: "/farmer/profile" });
     } catch (err: any) {
