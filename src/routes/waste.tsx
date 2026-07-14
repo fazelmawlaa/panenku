@@ -7,7 +7,7 @@ import { CustomerLayout } from "@/components/layout/CustomerLayout";
 import { ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/waste")({
-  head: () => ({ meta: [{ title: "Limbah Pertanian — RumohTani" }, { name: "description", content: "Marketplace limbah pertanian untuk ekonomi sirkular. Sekam padi, kulit kopi, batok kelapa, dan lainnya." }] }),
+  head: () => ({ meta: [{ title: "Limbah Pertanian — PANENKU" }, { name: "description", content: "Marketplace limbah pertanian untuk ekonomi sirkular. Sekam padi, kulit kopi, batok kelapa, dan lainnya." }] }),
   component: WastePage,
 });
 

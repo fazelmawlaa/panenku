@@ -9,19 +9,22 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { fetchRegisteredFarmers } from "@/lib/products-db";
 import fotoPetani from "@/assets/foto_petani.jpg";
-import { 
-  Search, Send, X, Star, ArrowLeft, Loader2, 
-  MessageSquare, Calendar, Clock, Award, ShieldCheck
+import {
+  Search, Send, X, Star, ArrowLeft, Loader2,
+  MessageSquare, Calendar, Clock, Award, ShieldCheck,
+  ChevronDown, ChevronUp
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { PAYMENT_METHODS } from "@/components/PaymentLogos";
 
 export const Route = createFileRoute("/consultations")({
-  head: () => ({ meta: [{ title: "Konsultasi Petani — RumohTani" }] }),
+  head: () => ({ meta: [{ title: "Konsultasi Petani — PANENKU" }] }),
   component: ConsultationsPage,
 });
 
 function ConsultationsPage() {
-  const { session, loading } = useAuth();
+  const { session, loading, user, profile } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,8 +36,8 @@ function ConsultationsPage() {
 
   // States
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCommodity, setSelectedCommodity] = useState<string>("Semua");
-  
+  const [expandedCategories, setExpandedCategories] = useState<{ [key: string]: boolean }>({});
+
   // Database-loaded registered farmers
   const [dbFarmers, setDbFarmers] = useState<any[]>([]);
   const [isLoadingFarmers, setIsLoadingFarmers] = useState(true);
@@ -42,60 +45,64 @@ function ConsultationsPage() {
   // Modal controls
   const [activeMentor, setActiveMentor] = useState<any>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
-  const [showChatModal, setShowChatModal] = useState(false);
 
-  // Booking states
-  const [bookingDate, setBookingDate] = useState("2026-07-06");
+  // Booking form states
+  const [bookingDate, setBookingDate] = useState("");
   const [bookingTime, setBookingTime] = useState("10:00");
   const [bookingNotes, setBookingNotes] = useState("");
-  
-  // Booked sessions tracking
-  const [bookedFarmers, setBookedFarmers] = useState<string[]>(["Pak Sugeng"]); // Sugeng pre-activated
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
 
-  // Sesi lists
-  const [consultSessions, setConsultSessions] = useState([
-    { id: "SES-892", mentor: "Pak Sugeng", topic: "Persiapan lahan padi lempung", date: "02 Jul 2026", time: "10:00", status: "Terjadwal", price: 75000 },
-    { id: "SES-451", mentor: "Bu Rahma", topic: "Pencegahan karat daun kopi", date: "25 Jun 2026", time: "13:00", status: "Selesai", price: 95000 }
-  ]);
+  // Booked sessions tracking from Supabase
+  const [bookedFarmers, setBookedFarmers] = useState<string[]>([]);
+  const [pendingFarmers, setPendingFarmers] = useState<string[]>([]);
+  const [isLoadingSessions, setIsLoadingSessions] = useState(true);
 
-  // Chat conversation streams
-  const [typedMessage, setTypedMessage] = useState("");
-  const [chatStreams, setChatStreams] = useState<{ [key: string]: any[] }>({
-    "Pak Sugeng": [
-      { sender: "mentor", text: "Halo! Ada yang bisa saya bantu dengan persiapan lahan padi Anda?", time: "09:12" }
-    ],
-    "Bu Rahma": [
-      { sender: "mentor", text: "Kopi Gayo biasanya butuh naungan pohon lamtoro. Sudah Anda siapkan?", time: "Kemarin" }
-    ]
-  });
+  // Set default booking date to today
+  useEffect(() => {
+    const today = new Date().toISOString().split("T")[0];
+    setBookingDate(today);
+  }, []);
 
+  // Load paid & pending sessions from Supabase
+  useEffect(() => {
+    if (!user) return;
+    const fetchBuyerSessions = async () => {
+      setIsLoadingSessions(true);
+      try {
+        const { data, error } = await supabase
+          .from("orders")
+          .select("product_name, status")
+          .eq("user_id", user.id);
+
+        if (!error && data) {
+          const paidMentors = data
+            .filter(o => o.status === "Paid" && o.product_name && o.product_name.startsWith("Konsultasi: "))
+            .map(o => o.product_name.replace("Konsultasi: ", ""));
+
+          const pendingMentors = data
+            .filter(o => o.status === "Pending" && o.product_name && o.product_name.startsWith("Konsultasi: "))
+            .map(o => o.product_name.replace("Konsultasi: ", ""));
+
+          setBookedFarmers(paidMentors);
+          setPendingFarmers(pendingMentors);
+        }
+      } catch (err) {
+        console.error("Failed to load sessions:", err);
+      } finally {
+        setIsLoadingSessions(false);
+      }
+    };
+    fetchBuyerSessions();
+  }, [user]);
+
+  // Load registered mentors
   useEffect(() => {
     const loadFarmers = async () => {
       setIsLoadingFarmers(true);
       const data = await fetchRegisteredFarmers();
-      
-      // Inject Halodoc metrics dynamically to database farmers
-      const mapped = data.map((f, idx) => {
-        const specs = [
-          "Spesialis Budidaya Padi & Pangan", 
-          "Ahli Kopi & Kompos Sirkular", 
-          "Praktisi Sayuran Hortikultura", 
-          "Mentor Pengolahan Limbah Tani"
-        ];
-        const experiences = ["15 tahun", "12 tahun", "18 tahun", "9 tahun"];
-        const ratings = ["99%", "98%", "97%", "95%"];
-        const prices = [75000, 95000, 60000, 80000];
-
-        return {
-          ...f,
-          specialty: specs[idx % specs.length],
-          experience: experiences[idx % experiences.length],
-          satisfaction: ratings[idx % ratings.length],
-          price: prices[idx % prices.length]
-        };
-      });
-
-      setDbFarmers(mapped);
+      // Filter out mentors who closed consultation
+      const openMentors = data.filter(f => f.isOpenForConsultation !== false);
+      setDbFarmers(openMentors);
       setIsLoadingFarmers(false);
     };
     loadFarmers();
@@ -104,54 +111,93 @@ function ConsultationsPage() {
   // Filter Mentors dynamically
   const filteredMentors = useMemo(() => {
     return dbFarmers.filter((m) => {
-      const matchSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          m.location.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      // Map selector categories
-      let matchComm = true;
-      if (selectedCommodity === "Padi") matchComm = m.specialty.includes("Padi");
-      else if (selectedCommodity === "Kopi") matchComm = m.specialty.includes("Kopi");
-      else if (selectedCommodity === "Sayuran") matchComm = m.specialty.includes("Sayur");
-      else if (selectedCommodity === "Limbah") matchComm = m.specialty.includes("Limbah");
-
-      return matchSearch && matchComm;
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        m.name.toLowerCase().includes(searchLower) ||
+        m.location.toLowerCase().includes(searchLower) ||
+        (m.specialty && m.specialty.toLowerCase().includes(searchLower))
+      );
     });
-  }, [dbFarmers, searchTerm, selectedCommodity]);
+  }, [dbFarmers, searchTerm]);
+
+  // Group Mentors by Specialty Categories
+  const groupedMentors = useMemo(() => {
+    const groups: { [key: string]: any[] } = {
+      "Budidaya Padi & Pangan": [],
+      "Sayuran Hortikultura": [],
+      "Kopi & Perkebunan": [],
+      "Limbah Tani": []
+    };
+
+    filteredMentors.forEach((m) => {
+      const spec = m.specialty || "";
+      if (spec.includes("Padi") || spec.includes("Pangan")) {
+        groups["Budidaya Padi & Pangan"].push(m);
+      } else if (spec.includes("Sayur") || spec.includes("Hortikultura")) {
+        groups["Sayuran Hortikultura"].push(m);
+      } else if (spec.includes("Kopi") || spec.includes("Perkebunan")) {
+        groups["Kopi & Perkebunan"].push(m);
+      } else if (spec.includes("Limbah")) {
+        groups["Limbah Tani"].push(m);
+      } else {
+        groups["Budidaya Padi & Pangan"].push(m);
+      }
+    });
+
+    return groups;
+  }, [filteredMentors]);
 
   const handleChatClick = (mentor: any) => {
-    setActiveMentor(mentor);
-    // If already booked, open chat directly. Otherwise, show booking checkout modal.
     if (bookedFarmers.includes(mentor.name)) {
-      setShowChatModal(true);
+      navigate({ to: "/chat", search: { mentorId: mentor.id } });
     } else {
+      setActiveMentor(mentor);
+      // Auto-set the first accepted payment method
+      if (mentor.payments && mentor.payments.length > 0) {
+        setSelectedPaymentMethod(mentor.payments[0]);
+      } else {
+        setSelectedPaymentMethod("BCA");
+      }
       setShowBookingModal(true);
     }
   };
 
-  const handleConfirmBooking = (e: React.FormEvent) => {
+  const handleConfirmBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeMentor) return;
+    if (!activeMentor || !user) {
+      toast.error("Silakan masuk terlebih dahulu");
+      return;
+    }
 
-    const newSession = {
-      id: "SES-" + Math.floor(100 + Math.random() * 899),
-      mentor: activeMentor.name,
-      topic: bookingNotes,
-      date: new Date(bookingDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }),
-      time: bookingTime,
-      status: "Terjadwal",
-      price: activeMentor.price
+    const orderId = "SES-" + Math.floor(100 + Math.random() * 899) + "-" + Date.now().toString().slice(-4);
+    const consultationProduct = "Konsultasi: " + activeMentor.name;
+
+    const orderData = {
+      id: orderId,
+      user_id: user.id,
+      product_id: activeMentor.id || "consultation_" + activeMentor.name,
+      product_name: consultationProduct,
+      qty: "1",
+      total: activeMentor.price,
+      status: "Pending", // Default to Pending until farmer manual verification
+      date: new Date(bookingDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) + " " + bookingTime,
+      farmer_id: activeMentor.id || null,
+      shipping_address: `Konsultasi Online [Metode: ${selectedPaymentMethod}] - ${bookingNotes}`,
+      buyer_name: profile?.full_name || user.email?.split("@")[0] || "Pembeli",
+      buyer_phone: profile?.phone || "-"
     };
 
-    setConsultSessions([newSession, ...consultSessions]);
-    setBookedFarmers([...bookedFarmers, activeMentor.name]);
-    setBookingNotes("");
-    setShowBookingModal(false);
-    toast.success(`Pembayaran sesi konsultasi bersama ${activeMentor.name} berhasil!`);
-    
-    // Automatically open chat modal after checkout
-    setTimeout(() => {
-      setShowChatModal(true);
-    }, 400);
+    try {
+      const { error } = await supabase.from("orders").insert([orderData]);
+      if (error) throw error;
+
+      toast.success("Pemesanan sesi berhasil dikirim! Silakan lakukan transfer bank dan tunggu verifikasi pembayaran oleh petani.");
+      setPendingFarmers([...pendingFarmers, activeMentor.name]);
+      setBookingNotes("");
+      setShowBookingModal(false);
+    } catch (err: any) {
+      toast.error("Gagal melakukan pemesanan sesi: " + err.message);
+    }
   };
 
   const handleSendMessage = (e: React.FormEvent) => {
@@ -188,212 +234,192 @@ function ConsultationsPage() {
     <CustomerLayout>
       <div className="mx-auto max-w-full px-4 sm:px-8 md:px-12 py-8 text-left space-y-6">
 
-        {/* Dynamic Halodoc Agricultural consultations layout split */}
-        <div className="grid lg:grid-cols-[1fr_2fr] gap-8 items-start">
-          
-          {/* LEFT COLUMN: HERO GRADIENT INFO CARD & HISTORY */}
-          <div className="space-y-6">
-            <div className="bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-950 rounded-[2.5rem] overflow-hidden shadow-xl border border-emerald-800 relative p-6 sm:p-8 flex flex-col gap-6 text-white min-h-[580px]">
-              {/* Background grids */}
-              <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: "radial-gradient(white 1px, transparent 1px)", backgroundSize: "16px 16px" }} />
-              <div className="absolute -left-[20%] -top-[20%] w-[300px] h-[300px] rounded-full bg-[#b4f05a]/15 blur-[60px] pointer-events-none" />
-              <div className="absolute -right-[20%] -bottom-[20%] w-[300px] h-[300px] rounded-full bg-primary/25 blur-[70px] pointer-events-none" />
-              
-              {/* Farmer Hero Image Box with categories badge */}
-              <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden border border-white/10 shadow-lg shrink-0 z-10">
-                <img src={fotoPetani} alt="Petani Mentor" className="h-full w-full object-cover transition-transform duration-700 hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-emerald-950 via-transparent to-transparent" />
-                <Badge className="absolute bottom-3 left-3 bg-[#b4f05a]/95 hover:bg-[#b4f05a]/95 text-emerald-950 border-none font-bold text-[9px] uppercase tracking-wider px-2.5 py-1">
-                  120+ Mentor Aktif
-                </Badge>
-              </div>
+        {/* HERO BANNER CARD (IMAGE AS BACKGROUND) - Spans 100% full width of content container, keeping rounded corners */}
+        <div className="rounded-[2.2rem] overflow-hidden shadow-xl border border-emerald-850 relative text-white flex flex-col justify-end min-h-[240px] sm:min-h-[460px] lg:min-h-[480px] group">
+          {/* Background image */}
+          <img
+            src={fotoPetani}
+            alt="Petani Mentor"
+            className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+          />
 
-              {/* Title & quote card */}
-              <div className="space-y-3 relative z-10 text-left">
-                <h3 className="font-['Plus_Jakarta_Sans',sans-serif] font-black text-2xl tracking-tight text-white leading-tight">
-                  Tanya Petani Mentor di <span className="text-[#b4f05a]">RumohTani</span>
-                </h3>
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-md">
-                  <p className="text-xs text-emerald-100/90 font-light italic leading-relaxed">
-                    “Konsultasi langsung dengan petani berpengalaman untuk meningkatkan hasil panen.”
-                  </p>
-                </div>
-              </div>
+          {/* Dark green gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/90 via-emerald-950/40 to-transparent z-10" />
 
-              {/* Glass benefit capsules */}
-              <div className="space-y-3 relative z-10 text-left">
-                {/* Benefit 1 */}
-                <div className="flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm hover:bg-white/10 hover:border-white/20 transition-all duration-300">
-                  <div className="relative flex h-3 w-3 shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-white">Respon cepat</div>
-                    <div className="text-[10px] text-emerald-300 font-light mt-0.5">&lt; 5 menit</div>
-                  </div>
-                </div>
+          {/* Background grids */}
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-10" style={{ backgroundImage: "radial-gradient(white 1px, transparent 1px)", backgroundSize: "16px 16px" }} />
 
-                {/* Benefit 2 */}
-                <div className="flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm hover:bg-white/10 hover:border-white/20 transition-all duration-300">
-                  <div className="h-8 w-8 shrink-0 rounded-xl bg-white/10 flex items-center justify-center text-lg select-none border border-white/10">🌱</div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-white">Petani Terverifikasi</div>
-                    <div className="text-[10px] text-emerald-300 font-light mt-0.5">Mentor tersertifikasi & berpengalaman</div>
-                  </div>
-                </div>
+          {/* Centered Text below the image (with padding) */}
+          <div className="relative z-20 p-6 sm:p-12 text-center w-full">
+            <h3 className="font-['Plus_Jakarta_Sans',sans-serif] font-black text-2xl sm:text-4xl tracking-tight text-white leading-tight">
+              Tanya Petani Mentor di <span className="text-[#b4f05a]">PANENKU</span>
+            </h3>
+          </div>
+        </div>
 
-                {/* Benefit 3 */}
-                <div className="flex items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm hover:bg-white/10 hover:border-white/20 transition-all duration-300">
-                  <div className="h-8 w-8 shrink-0 rounded-xl bg-white/10 flex items-center justify-center text-lg select-none border border-white/10">♻️</div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-white">Ekosistem Berkelanjutan</div>
-                    <div className="text-[10px] text-emerald-300 font-light mt-0.5">Panduan budidaya & tata kelola limbah tani</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Riwayat sesi tabel */}
-            <div className="bg-white border border-border/40 rounded-[2.2rem] p-6 sm:p-8 shadow-sm space-y-4">
-              <h3 className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-sm text-foreground">Riwayat Sesi Anda</h3>
-              <div className="space-y-3">
-                {consultSessions.map((ses) => (
-                  <div key={ses.id} className="border border-border/20 rounded-2xl p-3.5 flex items-center justify-between text-xs hover:bg-secondary/25 transition">
-                    <div className="space-y-1">
-                      <div className="font-bold text-foreground">{ses.mentor}</div>
-                      <div className="text-[10px] text-muted-foreground line-clamp-1">{ses.topic}</div>
-                      <div className="text-[9px] text-muted-foreground">{ses.date} · {ses.time}</div>
-                    </div>
-                    <Badge className={`rounded px-2 py-0.5 text-[9px] font-bold uppercase shrink-0 ${
-                      ses.status === "Terjadwal" 
-                        ? "bg-blue-500/10 text-blue-800 border-transparent" 
-                        : "bg-emerald-500/10 text-emerald-800 border-transparent"
-                    }`}>
-                      {ses.status}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {/* Standalone Search Bar & Chat Sessions Launcher Button */}
+        <div className="flex flex-row gap-2 items-center w-full">
+          {/* SEARCH BAR */}
+          <div className="flex items-center flex-grow bg-white border border-border/80 rounded-2xl shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200 h-12 min-w-0">
+            <Search className="h-4 w-4 text-muted-foreground ml-3 sm:ml-4 shrink-0" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Cari nama mentor, keahlian..."
+              className="w-full h-full border-none focus:outline-none bg-transparent text-xs text-foreground px-2 sm:px-3 font-light min-w-0"
+            />
+            <button
+              type="button"
+              className="bg-[#b4f05a] hover:bg-[#a3db4e] text-emerald-950 font-extrabold text-xs h-full px-4 sm:px-8 transition duration-200 shrink-0"
+            >
+              Cari
+            </button>
           </div>
 
-          {/* RIGHT CATALOG COLUMN */}
-          <div className="space-y-6">
-            
-            {/* SEARCH & FILTERS CONTROLS */}
-            <div className="bg-white border border-border/40 rounded-[2.2rem] p-5 shadow-sm">
-              <div className="flex flex-col md:flex-row gap-4 items-center justify-between w-full select-none">
-                
-                {/* Search Input bar styled like Marketplace */}
-                <div className="flex items-center flex-1 w-full bg-white border border-border/80 rounded-2xl shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200 h-14">
-                  <Search className="h-5 w-5 text-muted-foreground ml-4 shrink-0" />
-                  <input 
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Cari nama mentor, komoditas, lokasi..." 
-                    className="w-full h-full border-none focus:outline-none bg-transparent text-sm text-foreground px-4 font-light"
-                  />
-                  <button 
-                    type="button"
-                    className="bg-[#60a868] hover:bg-[#529359] text-white font-bold text-sm h-full px-8 transition duration-200 shrink-0"
-                  >
-                    Cari
-                  </button>
-                </div>
+          {/* CHAT LAUNCH BUTTON */}
+          <Button
+            type="button"
+            onClick={() => navigate({ to: "/chat" })}
+            className="bg-primary hover:bg-primary/95 text-white font-extrabold text-xs h-12 px-3.5 sm:px-6 rounded-2xl shadow-sm shrink-0 flex items-center gap-2"
+          >
+            <MessageSquare className="h-4 w-4" />
+            <span className="hidden sm:inline">Chat Sesi</span>
+          </Button>
+        </div>
 
-                {/* Filters Pills */}
-                <div className="flex flex-wrap gap-1.5 justify-start w-full md:w-auto shrink-0">
-                  {["Semua", "Padi", "Sayuran", "Kopi", "Limbah"].map((comm) => (
-                    <button
-                      key={comm}
-                      onClick={() => setSelectedCommodity(comm)}
-                      className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase transition duration-200 ${
-                        selectedCommodity === comm 
-                          ? "bg-primary text-white shadow-soft" 
-                          : "bg-secondary hover:bg-secondary-hover text-foreground/80"
-                      }`}
-                    >
-                      {comm}
-                    </button>
-                  ))}
-                </div>
-              </div>
+        {/* MENTOR LIST GROUPED BY CATEGORY (Full Width Layout) */}
+        <div className="space-y-8 w-full">
+          {isLoadingFarmers ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm font-light">Memuat direktori petani mentor...</p>
             </div>
+          ) : filteredMentors.length === 0 ? (
+            <div className="bg-white border border-border/40 rounded-[2.2rem] p-12 text-center text-muted-foreground text-sm font-light shadow-sm">
+              Tidak ada petani terdaftar yang memenuhi kriteria pencarian Anda.
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {Object.entries(groupedMentors).map(([categoryName, mentors]) => {
+                if (mentors.length === 0) return null;
 
-            {/* MENTOR LIST GRID (Halodoc card layout) */}
-            {isLoadingFarmers ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm font-light">Memuat direktori petani mentor...</p>
-              </div>
-            ) : filteredMentors.length === 0 ? (
-              <div className="bg-white border border-border/40 rounded-[2.2rem] p-12 text-center text-muted-foreground text-sm font-light shadow-sm">
-                Tidak ada petani terdaftar yang memenuhi kriteria pencarian Anda.
-              </div>
-            ) : (
-              <div className="grid gap-5 md:grid-cols-2">
-                {filteredMentors.map((m) => {
-                  const hasActiveSession = bookedFarmers.includes(m.name);
-                  return (
-                    <div key={m.id} className="bg-white border border-border/40 rounded-3xl p-5 shadow-sm hover:shadow-soft transition-all duration-300 flex gap-4 text-left relative overflow-hidden group">
-                      {/* Avatar */}
-                      <div className="aspect-square h-20 w-20 rounded-2xl overflow-hidden shrink-0 border border-border/20 bg-secondary">
-                        <img src={m.image} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" alt={m.name} />
-                      </div>
+                const isExpanded = expandedCategories[categoryName] || false;
+                const visibleMentors = isExpanded ? mentors : mentors.slice(0, 2);
 
-                      {/* Info details */}
-                      <div className="flex-grow min-w-0 flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <h4 className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-sm text-foreground truncate">{m.name}</h4>
-                            {hasActiveSession ? (
-                              <Badge className="bg-blue-500 text-white border-transparent text-[8px] uppercase tracking-wide px-1.5 py-0 rounded font-black shrink-0">Aktif</Badge>
-                            ) : (
-                              <Badge className="bg-[#b4f05a]/20 text-emerald-800 border-transparent text-[8px] uppercase tracking-wide px-1.5 py-0 rounded font-black shrink-0">Verified</Badge>
-                            )}
+                return (
+                  <div key={categoryName} className="space-y-4 text-left">
+                    <h3 className="font-['Plus_Jakarta_Sans',sans-serif] font-extrabold text-base text-foreground border-b border-border/20 pb-2 text-left">
+                      {categoryName}
+                    </h3>
+
+                    <div className="grid gap-5 md:grid-cols-2">
+                      {visibleMentors.map((m) => {
+                        const hasActiveSession = bookedFarmers.includes(m.name);
+                        const hasPendingSession = pendingFarmers.includes(m.name);
+                        return (
+                          <div key={m.id} className="bg-white border border-border/40 rounded-3xl p-5 shadow-sm hover:shadow-soft transition-all duration-300 flex gap-4 text-left relative overflow-hidden group">
+                            {/* Avatar */}
+                            <div className="aspect-square h-20 w-20 rounded-2xl overflow-hidden shrink-0 border border-border/20 bg-secondary">
+                              <img src={m.image} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" alt={m.name} />
+                            </div>
+
+                            {/* Info details */}
+                            <div className="flex-grow min-w-0 flex flex-col justify-between">
+                              <div>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <h4 className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-sm text-foreground truncate">{m.name}</h4>
+                                  {hasActiveSession ? (
+                                    <Badge className="bg-blue-500 text-white border-transparent text-[8px] uppercase tracking-wide px-1.5 py-0 rounded font-black shrink-0">Aktif</Badge>
+                                  ) : hasPendingSession ? (
+                                    <Badge className="bg-amber-500 text-white border-transparent text-[8px] uppercase tracking-wide px-1.5 py-0 rounded font-black shrink-0">Menunggu Verifikasi</Badge>
+                                  ) : (
+                                    <Badge className="bg-[#b4f05a]/20 text-emerald-800 border-transparent text-[8px] uppercase tracking-wide px-1.5 py-0 rounded font-black shrink-0">Verified</Badge>
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-0.5 font-light">{m.specialty}</p>
+
+                                <div className="flex items-center gap-2 mt-2 select-none">
+                                  <span className="text-[9px] text-muted-foreground bg-secondary/50 rounded px-1.5 py-0.5 flex items-center gap-1">
+                                    💼 {m.experience}
+                                  </span>
+                                  <span className="text-[9px] text-muted-foreground bg-secondary/50 rounded px-1.5 py-0.5 flex items-center gap-0.5">
+                                    ⭐ {m.satisfaction}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Price & CTA */}
+                              <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/20">
+                                <div>
+                                  <span className="text-[8px] text-muted-foreground uppercase font-black tracking-wider block">Biaya Sesi</span>
+                                  <span className="font-display font-extrabold text-primary text-sm">{formatRupiah(m.price)}</span>
+                                </div>
+                                {hasActiveSession ? (
+                                  <Button
+                                    onClick={() => handleChatClick(m)}
+                                    size="sm"
+                                    className="rounded-full text-xs font-bold px-4 bg-primary hover:bg-primary/95 text-white shadow-soft h-8 flex items-center gap-1.5 animate-pulse"
+                                  >
+                                    <MessageSquare className="h-3.5 w-3.5" />
+                                    <span>Chat Sekarang</span>
+                                  </Button>
+                                ) : hasPendingSession ? (
+                                  <Button
+                                    disabled
+                                    size="sm"
+                                    className="rounded-full text-xs font-bold px-3.5 bg-amber-500 text-white h-8 flex items-center gap-1 opacity-80 cursor-not-allowed border-transparent"
+                                  >
+                                    <Clock className="h-3.5 w-3.5 text-white" />
+                                    <span className="text-[10px]">Menunggu Verifikasi</span>
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    onClick={() => handleChatClick(m)}
+                                    size="sm"
+                                    className="rounded-full text-xs font-bold px-5 bg-primary hover:bg-primary/95 text-white shadow-soft h-8"
+                                  >
+                                    <span>Konsultasi</span>
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-0.5 font-light">{m.specialty}</p>
-
-                          <div className="flex items-center gap-2 mt-2 select-none">
-                            <span className="text-[9px] text-muted-foreground bg-secondary/50 rounded px-1.5 py-0.5 flex items-center gap-1">
-                              💼 {m.experience}
-                            </span>
-                            <span className="text-[9px] text-muted-foreground bg-secondary/50 rounded px-1.5 py-0.5 flex items-center gap-0.5">
-                              ⭐ {m.satisfaction}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Price & CTA */}
-                        <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/20">
-                          <div>
-                            <span className="text-[8px] text-muted-foreground uppercase font-black tracking-wider block">Biaya Sesi</span>
-                            <span className="font-display font-extrabold text-primary text-sm">{formatRupiah(m.price)}</span>
-                          </div>
-                          <Button 
-                            onClick={() => handleChatClick(m)}
-                            size="sm" 
-                            className="rounded-full text-xs font-bold px-5 bg-primary hover:bg-primary/95 text-white shadow-soft h-8"
-                          >
-                            {hasActiveSession ? "Chat Sekarang" : "Konsultasi"}
-                          </Button>
-                        </div>
-                      </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+
+                    {/* Show more button if > 2 mentors */}
+                    {mentors.length > 2 && (
+                      <div className="text-center pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setExpandedCategories({
+                            ...expandedCategories,
+                            [categoryName]: !isExpanded
+                          })}
+                          className="text-xs font-extrabold text-primary hover:underline flex items-center gap-1 mx-auto"
+                        >
+                          {isExpanded ? (
+                            <>Sembunyikan Sesi</>
+                          ) : (
+                            <>Tampilkan Lebih Banyak ({mentors.length - 2} mentor lagi)</>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* BOOKING MODAL DIALOG OVERLAY */}
         {showBookingModal && activeMentor && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-[2.5rem] w-full max-w-md p-6 sm:p-8 space-y-6 shadow-2xl relative animate-in zoom-in duration-300 text-left border border-border/30">
-              <button 
+              <button
                 onClick={() => setShowBookingModal(false)}
                 className="absolute right-6 top-6 h-8 w-8 rounded-full hover:bg-secondary grid place-items-center text-muted-foreground transition"
               >
@@ -431,15 +457,77 @@ function ConsultationsPage() {
 
                 <div className="space-y-1">
                   <Label htmlFor="b-notes" className="text-xs font-bold text-muted-foreground uppercase">Topik Bahasan / Keluhan</Label>
-                  <Input 
-                    id="b-notes" 
-                    value={bookingNotes} 
-                    onChange={(e) => setBookingNotes(e.target.value)} 
-                    placeholder="e.g. Cara mengatasi penyakit karat daun gayo" 
-                    className="rounded-xl text-xs h-10 border-border/40" 
-                    required 
+                  <Input
+                    id="b-notes"
+                    value={bookingNotes}
+                    onChange={(e) => setBookingNotes(e.target.value)}
+                    placeholder="e.g. Cara mengatasi penyakit karat daun gayo"
+                    className="rounded-xl text-xs h-10 border-border/40"
+                    required
                   />
                 </div>
+
+                {/* Payment Method Selector */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase">Pilih Metode Pembayaran</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(activeMentor.payments || ["BCA", "Mandiri", "DANA"]).map((payId: string) => {
+                      const pm = PAYMENT_METHODS.find(p => p.id === payId);
+                      if (!pm) return null;
+                      const isSelected = selectedPaymentMethod === payId;
+                      return (
+                        <button
+                          key={payId}
+                          type="button"
+                          onClick={() => setSelectedPaymentMethod(payId)}
+                          className={`flex items-center justify-center p-3 rounded-xl border transition duration-200 ${isSelected
+                            ? "border-primary bg-primary/5 shadow-sm"
+                            : "border-border/60 hover:bg-secondary/40"
+                            }`}
+                        >
+                          {pm.logo}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Dynamic Payment Credentials Instructions */}
+                {selectedPaymentMethod && (() => {
+                  const pm = PAYMENT_METHODS.find(p => p.id === selectedPaymentMethod);
+                  if (!pm) return null;
+
+                  const creds = (activeMentor.paymentDetails && activeMentor.paymentDetails[selectedPaymentMethod])
+                    || (activeMentor.bankDetails?.name === selectedPaymentMethod ? activeMentor.bankDetails : null)
+                    || { number: activeMentor.bankDetails?.number || "123-456-7890", holder: activeMentor.bankDetails?.holder || activeMentor.name };
+
+                  return (
+                    <div className="bg-secondary/40 border border-border/20 rounded-2xl p-4 space-y-2 text-xs text-left">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">{pm.type === "bank" ? "🏦" : "📱"}</span>
+                        <span className="font-bold text-foreground uppercase tracking-wider text-[9px]">
+                          Rincian Pembayaran {pm.name}
+                        </span>
+                      </div>
+                      <div className="space-y-1 font-sans text-left">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Metode:</span>
+                          <span className="font-bold text-foreground">{pm.name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            {pm.type === "bank" ? "Nomor Rekening:" : "Nomor HP / Akun:"}
+                          </span>
+                          <span className="font-bold text-primary select-all">{creds.number}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Atas Nama:</span>
+                          <span className="font-bold text-foreground">{creds.holder}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Subtotal fee */}
                 <div className="flex justify-between items-center bg-primary/5 rounded-2xl border border-primary/10 p-4 pt-3">
@@ -449,64 +537,6 @@ function ConsultationsPage() {
                   </div>
                   <Button type="submit" className="rounded-full px-6 font-bold shadow-soft">Bayar & Mulai Chat</Button>
                 </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* ACTIVE CHAT OVERLAY MODAL */}
-        {showChatModal && activeMentor && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-[2.5rem] w-full max-w-xl shadow-2xl flex flex-col h-[520px] overflow-hidden border border-border/30 animate-in zoom-in duration-300 relative">
-              
-              {/* Chat Header */}
-              <div className="p-4 bg-secondary/50 border-b border-border/20 flex items-center justify-between gap-3 shrink-0">
-                <div className="flex items-center gap-3">
-                  <img src={activeMentor.image} className="h-10 w-10 rounded-xl object-cover border border-border/20" alt="" />
-                  <div className="text-left">
-                    <div className="font-bold text-sm text-foreground flex items-center gap-1.5">
-                      {activeMentor.name}
-                      <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
-                    </div>
-                    <div className="text-[10px] text-muted-foreground font-light">Online · {activeMentor.specialty}</div>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setShowChatModal(false)}
-                  className="h-8 w-8 rounded-full hover:bg-secondary grid place-items-center text-muted-foreground transition"
-                >
-                  <X className="h-4.5 w-4.5" />
-                </button>
-              </div>
-
-              {/* Messages Body */}
-              <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-[#f8f9f5]">
-                {(chatStreams[activeMentor.name] || []).map((msg, i) => {
-                  const isStudent = msg.sender === "student";
-                  return (
-                    <div key={i} className={`flex ${isStudent ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[75%] rounded-2xl p-3 text-xs text-left shadow-sm ${
-                        isStudent 
-                          ? "bg-primary text-white rounded-tr-none" 
-                          : "bg-white text-foreground rounded-tl-none border border-border/20"
-                      }`}>
-                        <div>{msg.text}</div>
-                        <div className={`text-[8px] mt-1 text-right opacity-70 ${isStudent ? "text-white" : "text-muted-foreground"}`}>{msg.time}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Messages Input footer */}
-              <form onSubmit={handleSendMessage} className="p-4 border-t border-border/20 flex gap-2 shrink-0 bg-white">
-                <Input 
-                  value={typedMessage} 
-                  onChange={(e) => setTypedMessage(e.target.value)} 
-                  placeholder={`Ketik pesan untuk ${activeMentor.name}...`} 
-                  className="rounded-full flex-1 bg-secondary/50 font-light text-xs h-10 px-4 border-transparent focus-visible:ring-primary/20" 
-                />
-                <Button type="submit" size="icon" className="rounded-full h-10 w-10 shrink-0 shadow-soft"><Send className="h-4 w-4" /></Button>
               </form>
             </div>
           </div>

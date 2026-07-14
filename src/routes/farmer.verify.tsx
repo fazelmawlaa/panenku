@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Check, Loader2, FileText, ArrowLeft, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/farmer/verify")({
-  head: () => ({ meta: [{ title: "Verifikasi KTP Penjual — RumohTani" }] }),
+  head: () => ({ meta: [{ title: "Verifikasi KTP Penjual — PANENKU" }] }),
   component: FarmerVerificationPage,
 });
 
@@ -174,7 +174,7 @@ function FarmerVerificationPage() {
           <div className="p-4 bg-emerald-500/5 border border-primary/20 rounded-2xl flex items-start gap-3">
             <ShieldCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
             <div className="text-xs font-medium text-emerald-800 leading-relaxed">
-              Verifikasi KTP diwajibkan demi menjaga keamanan ekosistem transaksi RumohTani dan mencegah penipuan. Data KTP Anda dienkripsi dengan aman di database.
+              Verifikasi KTP diwajibkan demi menjaga keamanan ekosistem transaksi PANENKU dan mencegah penipuan. Data KTP Anda dienkripsi dengan aman di database.
             </div>
           </div>
 

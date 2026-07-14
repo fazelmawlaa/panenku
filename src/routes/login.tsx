@@ -6,15 +6,15 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth-context";
 import { type AppRole } from "@/hooks/use-auth";
 import { Mail, Lock, User, Loader2, Eye, EyeOff, ArrowLeft, Phone, MapPin, Briefcase } from "lucide-react";
-import logoRumohTani from "@/assets/rumohtani_transparent.png";
+import logoPanenku from "@/assets/logo_panenku.png";
 import farmingBg from "@/assets/farming_bg.png";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Masuk — RumohTani" },
-      { name: "description", content: "Masuk ke akun RumohTani Anda untuk mengakses semua fitur marketplace dan konsultasi pertanian terintegrasi." },
+      { title: "Masuk — PANENKU" },
+      { name: "description", content: "Masuk ke akun PANENKU Anda untuk mengakses semua fitur marketplace dan konsultasi pertanian terintegrasi." },
     ],
   }),
   component: LoginPage,
@@ -193,7 +193,7 @@ function LoginPage() {
       {/* Right side — Form */}
       <div className="flex-1 flex flex-col relative z-10">
         {/* Top bar */}
-        <div className="flex items-center px-8 py-6">
+        <div className="flex items-center px-4 py-4 sm:px-8 sm:py-6">
           <Link
             to="/onboarding"
             className="inline-flex items-center gap-2 rounded-full bg-primary/10 text-primary px-5 py-2.5 text-xs font-bold hover:bg-primary/20 transition uppercase tracking-wider shadow-sm"
@@ -204,21 +204,18 @@ function LoginPage() {
         </div>
 
         {/* Form container */}
-        <div className="flex-1 flex items-center justify-center px-6 sm:px-12 pb-12">
-          <div className="w-full max-w-md bg-white border border-border/40 p-8 sm:p-10 rounded-[2.5rem] shadow-lg relative">
+        <div className="flex-1 flex items-center justify-center px-4 sm:px-12 pb-12">
+          <div className="w-full max-w-md bg-white border border-border/40 p-5 sm:p-10 rounded-[1.5rem] sm:rounded-[2.5rem] shadow-lg relative">
             {/* Subtle glow filter inside card */}
             <div className="absolute top-0 right-0 w-44 h-44 rounded-full bg-[#b4f05a]/5 blur-2xl pointer-events-none" />
 
             {/* Logo and Brand Info */}
-            <div className="flex flex-col items-center text-center mb-6">
+            <div className="flex flex-col items-center text-center mb-4">
               <img
-                src={logoRumohTani}
-                alt="RumohTani Logo"
-                className="h-16 object-contain mb-3"
+                src={logoPanenku}
+                alt="PANENKU Logo"
+                className="h-20 object-contain"
               />
-              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
-                Platform Marketplace Pertanian Terintegrasi
-              </p>
             </div>
 
             {/* Title */}

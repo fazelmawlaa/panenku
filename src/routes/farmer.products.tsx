@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { FarmerLayout } from "@/components/layout/FarmerLayout";
+import bgDashboard from "@/assets/bg_dashboard.jpg";
 import { formatRupiah } from "@/lib/mock-data";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute("/farmer/products")({
-  head: () => ({ meta: [{ title: "Marketplace Hasil Panen — RumohTani" }] }),
+  head: () => ({ meta: [{ title: "Marketplace Hasil Panen — PANENKU" }] }),
   component: ProductManagement,
 });
 
@@ -78,6 +79,11 @@ function ProductManagement() {
   const [editUnit, setEditUnit] = useState("");
   const [editCultivation, setEditCultivation] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editPayMethods, setEditPayMethods] = useState({
+    ewallet: true,
+    va: true,
+    card: true,
+  });
 
   const handleEditClick = (p: any) => {
     setEditingProduct(p);
@@ -88,12 +94,26 @@ function ProductManagement() {
     setEditUnit(p.unit || "kg");
     setEditCultivation(p.cultivation || "");
     setEditDescription(p.description || "");
+    const pMethods = p.paymentMethods || ["ewallet", "va", "card"];
+    setEditPayMethods({
+      ewallet: pMethods.includes("ewallet"),
+      va: pMethods.includes("va"),
+      card: pMethods.includes("card"),
+    });
   };
 
   const handleEditSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProduct) return;
     try {
+      let paymentMethodsStr = Object.entries(editPayMethods)
+        .filter(([_, enabled]) => enabled)
+        .map(([key]) => key)
+        .join(",");
+      if (!paymentMethodsStr) {
+        paymentMethodsStr = "ewallet,va,card";
+      }
+
       await updateProductInSupabase(editingProduct.id, {
         name: editName,
         category: editCategory,
@@ -101,7 +121,8 @@ function ProductManagement() {
         stock: Number(editStock),
         unit: editUnit,
         cultivation: editCultivation,
-        description: editDescription
+        description: editDescription,
+        payment_methods: paymentMethodsStr,
       });
       toast.success("Produk berhasil diperbarui!");
       setEditingProduct(null);
@@ -165,18 +186,25 @@ function ProductManagement() {
         <div className="absolute top-[5%] left-[-10%] w-[35vw] h-[35vw] rounded-full bg-emerald-500/5 blur-[100px] pointer-events-none" />
           
         {/* Header Card */}
-        <div className="bg-white border border-border/40 rounded-[2rem] p-6 sm:p-8 flex flex-wrap items-center justify-between gap-4 shadow-sm">
-          <div>
-            <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Kelola Produk Tani</div>
-            <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-3xl font-extrabold text-foreground tracking-tight mt-1">
-              Marketplace <span className="font-['Playfair_Display',serif] italic font-light text-primary">Hasil Panen</span>
+        <div 
+          className="relative overflow-hidden border border-emerald-800 rounded-[1.5rem] sm:rounded-[2.5rem] p-6 sm:p-8 flex flex-wrap items-center justify-between gap-4 shadow-lg text-white"
+          style={{ 
+            backgroundImage: `linear-gradient(to right, rgba(6, 78, 59, 0.95), rgba(6, 78, 59, 0.45)), url(${bgDashboard})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center"
+          }}
+        >
+          <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: "radial-gradient(white 1px, transparent 1px)", backgroundSize: "16px 16px" }} />
+          <div className="relative z-10">
+            <div className="text-xs font-bold text-[#b4f05a] uppercase tracking-wider">Kelola Produk Tani</div>
+            <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">
+              Marketplace <span className="font-['Playfair_Display',serif] italic font-light text-[#b4f05a]">Hasil Panen</span>
             </h1>
-            <p className="text-sm text-muted-foreground font-light mt-1.5">Tawarkan pasokan pre-order panen bergaransi kontrak atau ready stock komoditas segar Anda.</p>
           </div>
           {isVerified && (
             <Button 
               onClick={() => navigate({ to: "/farmer/products-add" })}
-              className="rounded-full gap-2 px-6 shadow-soft hover:scale-[1.02] transition"
+              className="relative z-10 rounded-full gap-2 px-6 bg-[#b4f05a] hover:bg-[#a3db4e] text-black font-extrabold shadow-soft hover:scale-[1.02] transition border-0"
             >
               <Plus className="h-5 w-5" /> Tambah Produk
             </Button>
@@ -189,7 +217,7 @@ function ProductManagement() {
             <div className="space-y-2">
               <h2 className="font-['Plus_Jakarta_Sans',sans-serif] font-black text-2xl text-foreground">Verifikasi Akun Penjual Diperlukan</h2>
               <p className="text-sm font-light text-muted-foreground leading-relaxed">
-                Untuk menjaga keamanan transaksi dan mencegah penipuan di platform RumohTani, Anda diwajibkan untuk melengkapi <strong className="font-bold">Profil & Biodata Penjual</strong>, termasuk mengunggah dokumen <strong className="font-bold">KTP</strong>, sebelum dapat menjual hasil tani atau limbah pertanian.
+                Untuk menjaga keamanan transaksi dan mencegah penipuan di platform PANENKU, Anda diwajibkan untuk melengkapi <strong className="font-bold">Profil & Biodata Penjual</strong>, termasuk mengunggah dokumen <strong className="font-bold">KTP</strong>, sebelum dapat menjual hasil tani atau limbah pertanian.
               </p>
             </div>
             <div className="pt-2">
@@ -431,6 +459,39 @@ function ProductManagement() {
                   className="rounded-xl border-gray-200 mt-1 resize-none" 
                   required
                 />
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold text-gray-700">Metode Pembayaran yang Diterima</Label>
+                <div className="grid grid-cols-2 gap-3 bg-gray-50/50 p-4 rounded-xl border border-gray-200 mt-1">
+                  <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                    <input 
+                      type="checkbox"
+                      checked={editPayMethods.ewallet}
+                      onChange={(e) => setEditPayMethods({ ...editPayMethods, ewallet: e.target.checked })}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    E-Wallet
+                  </label>
+                  <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                    <input 
+                      type="checkbox"
+                      checked={editPayMethods.va}
+                      onChange={(e) => setEditPayMethods({ ...editPayMethods, va: e.target.checked })}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    Virtual Account
+                  </label>
+                  <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                    <input 
+                      type="checkbox"
+                      checked={editPayMethods.card}
+                      onChange={(e) => setEditPayMethods({ ...editPayMethods, card: e.target.checked })}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    Kartu Kredit/Debit
+                  </label>
+                </div>
               </div>
             </div>
 

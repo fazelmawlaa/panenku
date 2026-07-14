@@ -9,11 +9,12 @@ import { Check, MessageSquare, X, ShoppingBag, Loader2, Truck, Sprout, Package }
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { fetchFarmerOrders, updateOrderStatusInSupabase } from "@/lib/products-db";
+import bgDashboard from "@/assets/bg_dashboard.jpg";
 
 const tabs = ["Semua", "Menunggu", "Dibayar", "Diproses", "Sedang Panen", "Pengiriman", "Selesai", "Ditolak"] as const;
 
 export const Route = createFileRoute("/farmer/orders")({
-  head: () => ({ meta: [{ title: "Kelola Pesanan Tani — RumohTani" }] }),
+  head: () => ({ meta: [{ title: "Kelola Pesanan Tani — PANENKU" }] }),
   component: FarmerOrders,
 });
 
@@ -64,27 +65,31 @@ function FarmerOrders() {
         <div className="absolute top-[5%] right-[-10%] w-[35vw] h-[35vw] rounded-full bg-emerald-500/5 blur-[100px] pointer-events-none" />
           
         {/* Header Card */}
-        <div className="bg-white border border-border/40 rounded-[2rem] p-6 sm:p-8 flex flex-wrap items-center justify-between gap-4 shadow-sm">
-          <div>
-            <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Kelola Transaksi</div>
-            <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-3xl font-extrabold text-foreground tracking-tight mt-1">
-              Kelola <span className="font-['Playfair_Display',serif] italic font-light text-primary">Pesanan Tani</span>
+        <div 
+          className="relative overflow-hidden border border-emerald-800 rounded-[1.5rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-lg text-white"
+          style={{ 
+            backgroundImage: `linear-gradient(to right, rgba(6, 78, 59, 0.95), rgba(6, 78, 59, 0.45)), url(${bgDashboard})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center"
+          }}
+        >
+          <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: "radial-gradient(white 1px, transparent 1px)", backgroundSize: "16px 16px" }} />
+          <div className="relative z-10">
+            <div className="text-xs font-bold text-[#b4f05a] uppercase tracking-wider">Kelola Transaksi</div>
+            <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">
+              Kelola <span className="font-['Playfair_Display',serif] italic font-light text-[#b4f05a]">Pesanan Tani</span>
             </h1>
-            <p className="text-sm text-muted-foreground font-light mt-1.5">Pantau, terima, dan kelola proses pemenuhan pesanan panen pre-order serta limbah pertanian dari mitra usaha.</p>
-          </div>
-          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-primary text-white shrink-0">
-            <ShoppingBag className="h-6 w-6" />
           </div>
         </div>
 
         {/* Tabs Filter */}
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="mb-6">
-          <TabsList className="rounded-full p-1 h-auto bg-secondary/70 border border-border/20 flex-wrap">
+          <TabsList className="w-full flex overflow-x-auto whitespace-nowrap scrollbar-none gap-2 bg-transparent p-1 h-auto border-0">
             {tabs.map((t) => (
               <TabsTrigger 
                 key={t} 
                 value={t} 
-                className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-5 py-2 font-bold text-xs uppercase tracking-wider"
+                className="rounded-full border border-border/60 bg-white data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-4 py-2 font-extrabold text-[10px] sm:text-xs uppercase tracking-wider shadow-sm shrink-0 transition-all duration-300"
               >
                 {t}
               </TabsTrigger>

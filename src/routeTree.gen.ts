@@ -18,6 +18,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as FarmerRouteImport } from './routes/farmer'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ConsultationsRouteImport } from './routes/consultations'
+import { Route as ChatRouteImport } from './routes/chat'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OrdersIndexRouteImport } from './routes/orders.index'
@@ -25,6 +26,7 @@ import { Route as FarmerIndexRouteImport } from './routes/farmer.index'
 import { Route as ProductsIdRouteImport } from './routes/products.$id'
 import { Route as PreOrderIdRouteImport } from './routes/pre-order.$id'
 import { Route as OrdersOrderIdRouteImport } from './routes/orders.$orderId'
+import { Route as FarmerWasteAddRouteImport } from './routes/farmer.waste-add'
 import { Route as FarmerWasteRouteImport } from './routes/farmer.waste'
 import { Route as FarmerVerifyRouteImport } from './routes/farmer.verify'
 import { Route as FarmerProfileEditRouteImport } from './routes/farmer.profile-edit'
@@ -82,6 +84,11 @@ const ConsultationsRoute = ConsultationsRouteImport.update({
   path: '/consultations',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChatRoute = ChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CartRoute = CartRouteImport.update({
   id: '/cart',
   path: '/cart',
@@ -116,6 +123,11 @@ const OrdersOrderIdRoute = OrdersOrderIdRouteImport.update({
   id: '/$orderId',
   path: '/$orderId',
   getParentRoute: () => OrdersRoute,
+} as any)
+const FarmerWasteAddRoute = FarmerWasteAddRouteImport.update({
+  id: '/waste-add',
+  path: '/waste-add',
+  getParentRoute: () => FarmerRoute,
 } as any)
 const FarmerWasteRoute = FarmerWasteRouteImport.update({
   id: '/waste',
@@ -176,6 +188,7 @@ const CheckoutIdRoute = CheckoutIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/cart': typeof CartRoute
+  '/chat': typeof ChatRoute
   '/consultations': typeof ConsultationsRoute
   '/dashboard': typeof DashboardRoute
   '/farmer': typeof FarmerRouteWithChildren
@@ -196,6 +209,7 @@ export interface FileRoutesByFullPath {
   '/farmer/profile-edit': typeof FarmerProfileEditRoute
   '/farmer/verify': typeof FarmerVerifyRoute
   '/farmer/waste': typeof FarmerWasteRoute
+  '/farmer/waste-add': typeof FarmerWasteAddRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
   '/pre-order/$id': typeof PreOrderIdRoute
   '/products/$id': typeof ProductsIdRoute
@@ -205,6 +219,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cart': typeof CartRoute
+  '/chat': typeof ChatRoute
   '/consultations': typeof ConsultationsRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
@@ -223,6 +238,7 @@ export interface FileRoutesByTo {
   '/farmer/profile-edit': typeof FarmerProfileEditRoute
   '/farmer/verify': typeof FarmerVerifyRoute
   '/farmer/waste': typeof FarmerWasteRoute
+  '/farmer/waste-add': typeof FarmerWasteAddRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
   '/pre-order/$id': typeof PreOrderIdRoute
   '/products/$id': typeof ProductsIdRoute
@@ -233,6 +249,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/cart': typeof CartRoute
+  '/chat': typeof ChatRoute
   '/consultations': typeof ConsultationsRoute
   '/dashboard': typeof DashboardRoute
   '/farmer': typeof FarmerRouteWithChildren
@@ -253,6 +270,7 @@ export interface FileRoutesById {
   '/farmer/profile-edit': typeof FarmerProfileEditRoute
   '/farmer/verify': typeof FarmerVerifyRoute
   '/farmer/waste': typeof FarmerWasteRoute
+  '/farmer/waste-add': typeof FarmerWasteAddRoute
   '/orders/$orderId': typeof OrdersOrderIdRoute
   '/pre-order/$id': typeof PreOrderIdRoute
   '/products/$id': typeof ProductsIdRoute
@@ -264,6 +282,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/cart'
+    | '/chat'
     | '/consultations'
     | '/dashboard'
     | '/farmer'
@@ -284,6 +303,7 @@ export interface FileRouteTypes {
     | '/farmer/profile-edit'
     | '/farmer/verify'
     | '/farmer/waste'
+    | '/farmer/waste-add'
     | '/orders/$orderId'
     | '/pre-order/$id'
     | '/products/$id'
@@ -293,6 +313,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/cart'
+    | '/chat'
     | '/consultations'
     | '/dashboard'
     | '/login'
@@ -311,6 +332,7 @@ export interface FileRouteTypes {
     | '/farmer/profile-edit'
     | '/farmer/verify'
     | '/farmer/waste'
+    | '/farmer/waste-add'
     | '/orders/$orderId'
     | '/pre-order/$id'
     | '/products/$id'
@@ -320,6 +342,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/cart'
+    | '/chat'
     | '/consultations'
     | '/dashboard'
     | '/farmer'
@@ -340,6 +363,7 @@ export interface FileRouteTypes {
     | '/farmer/profile-edit'
     | '/farmer/verify'
     | '/farmer/waste'
+    | '/farmer/waste-add'
     | '/orders/$orderId'
     | '/pre-order/$id'
     | '/products/$id'
@@ -350,6 +374,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CartRoute: typeof CartRoute
+  ChatRoute: typeof ChatRoute
   ConsultationsRoute: typeof ConsultationsRoute
   DashboardRoute: typeof DashboardRoute
   FarmerRoute: typeof FarmerRouteWithChildren
@@ -428,6 +453,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConsultationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chat': {
+      id: '/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cart': {
       id: '/cart'
       path: '/cart'
@@ -476,6 +508,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/orders/$orderId'
       preLoaderRoute: typeof OrdersOrderIdRouteImport
       parentRoute: typeof OrdersRoute
+    }
+    '/farmer/waste-add': {
+      id: '/farmer/waste-add'
+      path: '/waste-add'
+      fullPath: '/farmer/waste-add'
+      preLoaderRoute: typeof FarmerWasteAddRouteImport
+      parentRoute: typeof FarmerRoute
     }
     '/farmer/waste': {
       id: '/farmer/waste'
@@ -568,6 +607,7 @@ interface FarmerRouteChildren {
   FarmerProfileEditRoute: typeof FarmerProfileEditRoute
   FarmerVerifyRoute: typeof FarmerVerifyRoute
   FarmerWasteRoute: typeof FarmerWasteRoute
+  FarmerWasteAddRoute: typeof FarmerWasteAddRoute
   FarmerIndexRoute: typeof FarmerIndexRoute
 }
 
@@ -582,6 +622,7 @@ const FarmerRouteChildren: FarmerRouteChildren = {
   FarmerProfileEditRoute: FarmerProfileEditRoute,
   FarmerVerifyRoute: FarmerVerifyRoute,
   FarmerWasteRoute: FarmerWasteRoute,
+  FarmerWasteAddRoute: FarmerWasteAddRoute,
   FarmerIndexRoute: FarmerIndexRoute,
 }
 
@@ -616,6 +657,7 @@ const ProductsRouteWithChildren = ProductsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CartRoute: CartRoute,
+  ChatRoute: ChatRoute,
   ConsultationsRoute: ConsultationsRoute,
   DashboardRoute: DashboardRoute,
   FarmerRoute: FarmerRouteWithChildren,

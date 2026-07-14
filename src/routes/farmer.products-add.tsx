@@ -16,7 +16,7 @@ import limbahImg from "@/assets/limbah_pertanian.png";
 import alatTaniImg from "@/assets/alat_tani.png";
 
 export const Route = createFileRoute("/farmer/products-add")({
-  head: () => ({ meta: [{ title: "Tambah Produk — RumohTani" }] }),
+  head: () => ({ meta: [{ title: "Tambah Produk — PANENKU" }] }),
   component: AddProduct,
 });
 
@@ -37,6 +37,11 @@ function AddProduct() {
   const [unit, setUnit] = useState("kg");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isVerified, setIsVerified] = useState(true);
+  const [payMethods, setPayMethods] = useState({
+    ewallet: true,
+    va: true,
+    card: true,
+  });
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -131,6 +136,14 @@ function AddProduct() {
         dbCategory = category.charAt(0).toUpperCase() + category.slice(1);
       }
       
+      let paymentMethodsStr = Object.entries(payMethods)
+        .filter(([_, enabled]) => enabled)
+        .map(([key]) => key)
+        .join(",");
+      if (!paymentMethodsStr) {
+        paymentMethodsStr = "ewallet,va,card";
+      }
+
       await saveProductToSupabase({
         name,
         category: dbCategory,
@@ -145,6 +158,7 @@ function AddProduct() {
         image: selectedImg,
         estimated_harvest: type === "preorder" && estimatedHarvest ? estimatedHarvest : null,
         cultivation: cultivation || null,
+        payment_methods: paymentMethodsStr,
       });
 
       toast.success("Produk Anda berhasil diterbitkan!");
@@ -164,7 +178,7 @@ function AddProduct() {
           <div className="space-y-2">
             <h2 className="font-['Plus_Jakarta_Sans',sans-serif] font-black text-2xl text-foreground">Verifikasi Akun Penjual Diperlukan</h2>
             <p className="text-sm font-light text-muted-foreground leading-relaxed">
-              Untuk menjaga keamanan transaksi dan mencegah penipuan di platform RumohTani, Anda diwajibkan untuk melengkapi <strong className="font-bold">Profil & Biodata Penjual</strong>, termasuk mengunggah dokumen <strong className="font-bold">KTP</strong>, sebelum dapat menjual hasil tani atau limbah pertanian.
+              Untuk menjaga keamanan transaksi dan mencegah penipuan di platform PANENKU, Anda diwajibkan untuk melengkapi <strong className="font-bold">Profil & Biodata Penjual</strong>, termasuk mengunggah dokumen <strong className="font-bold">KTP</strong>, sebelum dapat menjual hasil tani atau limbah pertanian.
             </p>
           </div>
           <div className="pt-2">
@@ -184,7 +198,6 @@ function AddProduct() {
               const types = [
                 { v: "preorder", icon: Sprout, t: "Pre-Order Panen", d: "Jual hasil panen sebelum panen tiba. Pembeli memesan dan membayar di muka untuk mendapatkan komoditas segar langsung dari lahan Anda.", img: preorderImg },
                 { v: "ready", icon: Package, t: "Ready Stock", d: "Stok komoditas yang sudah siap kirim. Pembeli langsung membeli tanpa menunggu masa panen.", img: readyStockImg },
-                { v: "waste", icon: Recycle, t: "Limbah Pertanian", d: "Ubah limbah pertanian seperti sekam, jerami, dan kulit kopi menjadi sumber pendapatan tambahan yang berkelanjutan.", img: limbahImg },
                 { v: "tools", icon: Wrench, t: "Alat & Pupuk Tani", d: "Sediakan peralatan tani, bibit, atau pupuk berkualitas untuk menunjang aktivitas pertanian petani lain.", img: alatTaniImg },
               ];
               const currentIdx = types.findIndex(t => t.v === type);
@@ -504,6 +517,39 @@ function AddProduct() {
                     placeholder="Jelaskan kualitas, asal, dan keunggulan produk Anda..." 
                     required 
                   />
+                </div>
+
+                <div>
+                  <Label className="mb-2 block text-sm font-semibold text-gray-700">Metode Pembayaran yang Diterima</Label>
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 bg-gray-50/50 p-5 rounded-2xl border border-gray-200/40">
+                    <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                      <input 
+                        type="checkbox"
+                        checked={payMethods.ewallet}
+                        onChange={(e) => setPayMethods({ ...payMethods, ewallet: e.target.checked })}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      E-Wallet
+                    </label>
+                    <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                      <input 
+                        type="checkbox"
+                        checked={payMethods.va}
+                        onChange={(e) => setPayMethods({ ...payMethods, va: e.target.checked })}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      Virtual Account
+                    </label>
+                    <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                      <input 
+                        type="checkbox"
+                        checked={payMethods.card}
+                        onChange={(e) => setPayMethods({ ...payMethods, card: e.target.checked })}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      Kartu Kredit/Debit
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>

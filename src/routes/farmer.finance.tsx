@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FarmerLayout } from "@/components/layout/FarmerLayout";
+import bgDashboard from "@/assets/bg_dashboard.jpg";
 import { salesData, formatRupiah } from "@/lib/mock-data";
 import { Wallet, TrendingUp, Trophy, Download, ArrowUpRight, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/farmer/finance")({
-  head: () => ({ meta: [{ title: "Analitik Pendapatan — RumohTani" }] }),
+  head: () => ({ meta: [{ title: "Analitik Pendapatan — PANENKU" }] }),
   component: FinancePage,
 });
 
@@ -38,15 +39,21 @@ function FinancePage() {
         <div className="absolute top-[5%] left-[-10%] w-[35vw] h-[35vw] rounded-full bg-emerald-500/5 blur-[100px] pointer-events-none" />
           
           {/* Header Banner */}
-          <div className="bg-white border border-border/40 rounded-[2rem] p-6 sm:p-8 flex flex-wrap items-center justify-between gap-4 shadow-sm">
-            <div>
-              <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Dashboard Keuangan</div>
-              <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-3xl font-extrabold text-foreground tracking-tight mt-1">
-                Analitik & <span className="font-['Playfair_Display',serif] italic font-light text-primary">Pendapatan Tani</span>
+          <div 
+            className="relative overflow-hidden border border-emerald-800 rounded-[1.5rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-lg text-white"
+            style={{ 
+              backgroundImage: `linear-gradient(to right, rgba(6, 78, 59, 0.95), rgba(6, 78, 59, 0.45)), url(${bgDashboard})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center"
+            }}
+          >
+            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: "radial-gradient(white 1px, transparent 1px)", backgroundSize: "16px 16px" }} />
+            <div className="relative z-10">
+              <div className="text-xs font-bold text-[#b4f05a] uppercase tracking-wider">Dashboard Keuangan</div>
+              <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">
+                Analitik & <span className="font-['Playfair_Display',serif] italic font-light text-[#b4f05a]">Pendapatan Tani</span>
               </h1>
-              <p className="text-sm text-muted-foreground font-light mt-1.5">Pantau ringkasan pendapatan dari marketplace hasil panen, pesanan limbah, dan pencairan dana Anda secara transparan.</p>
             </div>
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-primary text-white shrink-0"><Wallet className="h-6 w-6" /></div>
           </div>
 
           {/* Stats KPI grid */}

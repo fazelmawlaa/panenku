@@ -35,20 +35,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s);
+    const checkExpiration = async () => {
+      if (typeof window === "undefined") return false;
+      const loginTimeStr = localStorage.getItem("panenku_login_time");
+      if (loginTimeStr) {
+        const loginTime = parseInt(loginTimeStr, 10);
+        const oneDayMs = 24 * 60 * 60 * 1000;
+        if (Date.now() - loginTime > oneDayMs) {
+          localStorage.removeItem("panenku_login_time");
+          await supabase.auth.signOut();
+          return true; // expired
+        }
+      }
+      return false; // not expired
+    };
+
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, s) => {
       if (s?.user) {
+        if (event === "SIGNED_IN") {
+          localStorage.setItem("panenku_login_time", Date.now().toString());
+        }
+        
+        const isExpired = await checkExpiration();
+        if (isExpired) {
+          setSession(null);
+          setRole(null);
+          setProfile(null);
+          return;
+        }
+        
+        setSession(s);
         setTimeout(() => loadUserData(s.user.id), 0);
       } else {
+        setSession(null);
         setRole(null);
         setProfile(null);
       }
     });
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      if (data.session?.user) loadUserData(data.session.user.id);
-      setLoading(false);
+
+    checkExpiration().then((isExpired) => {
+      if (isExpired) {
+        setSession(null);
+        setLoading(false);
+      } else {
+        supabase.auth.getSession().then(({ data }) => {
+          if (data.session) {
+            if (!localStorage.getItem("panenku_login_time")) {
+              localStorage.setItem("panenku_login_time", Date.now().toString());
+            }
+          }
+          setSession(data.session);
+          if (data.session?.user) loadUserData(data.session.user.id);
+          setLoading(false);
+        });
+      }
     });
+
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -127,6 +169,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("panenku_login_time");
+    }
     await supabase.auth.signOut();
   }
 

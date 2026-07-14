@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { FarmerLayout } from "@/components/layout/FarmerLayout";
+import farmingBg from "@/assets/farming_bg.png";
 import { useState, useEffect } from "react";
 import {
   MapPin, Award, Star, ShieldCheck, Calendar, Leaf, Trophy,
@@ -10,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/farmer/profile")({
-  head: () => ({ meta: [{ title: "Profil Penjual & Ulasan — RumohTani" }] }),
+  head: () => ({ meta: [{ title: "Profil Penjual & Ulasan — PANENKU" }] }),
   component: ProfilePage,
 });
 
@@ -119,9 +120,12 @@ function ProfilePage() {
           
         {/* Cover Photo and Centered Main Info Header card */}
         <div className="bg-white border border-border/40 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-soft transition-all duration-300">
-          <div className="h-44 sm:h-60 relative bg-gradient-to-r from-emerald-800 to-emerald-600 flex items-center justify-center overflow-hidden">
-            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(white 1px, transparent 1px)", backgroundSize: "16px 16px" }} />
-            <div className="absolute text-white/15 font-['Playfair_Display',serif] italic text-7xl sm:text-9xl select-none pointer-events-none">RumohTani</div>
+          <div 
+            className="h-44 sm:h-60 relative flex items-center justify-center overflow-hidden bg-cover bg-center"
+            style={{ backgroundImage: `url(${farmingBg})` }}
+          >
+            <div className="absolute inset-0 bg-emerald-900/75 mix-blend-multiply" />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20" />
           </div>
           
           <div className="p-6 sm:p-10 -mt-24 sm:-mt-32 relative flex flex-col items-center text-center">
@@ -137,14 +141,15 @@ function ProfilePage() {
             </div>
             
             <div className="space-y-3 max-w-2xl">
-              <div className="flex flex-wrap items-center justify-center gap-2.5">
-                <h2 className="font-['Plus_Jakarta_Sans',sans-serif] text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">{name}</h2>
+              <h2 className="font-['Plus_Jakarta_Sans',sans-serif] text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight leading-tight">{name}</h2>
+              
+              <div className="flex items-center justify-center pt-0.5">
                 {isVerified ? (
-                  <Badge className="bg-primary/10 hover:bg-primary/20 text-emerald-800 border-primary/20 gap-1 rounded-full px-3 py-1 font-bold text-[10px] uppercase">
+                  <Badge className="bg-primary/10 hover:bg-primary/20 text-emerald-800 border-primary/20 gap-1.5 rounded-full px-3.5 py-1 font-extrabold text-[10px] uppercase tracking-wider">
                     <ShieldCheck className="h-3.5 w-3.5 text-primary" /> Mitra Terverifikasi
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="bg-red-500/10 text-red-800 border-red-500/20 gap-1 rounded-full px-3 py-1 font-bold text-[10px] uppercase">
+                  <Badge variant="outline" className="bg-red-500/10 text-red-800 border-red-500/20 gap-1.5 rounded-full px-3.5 py-1 font-extrabold text-[10px] uppercase tracking-wider">
                     🔒 Verifikasi Diperlukan
                   </Badge>
                 )}
@@ -206,9 +211,10 @@ function ProfilePage() {
         <div className="space-y-8">
           {/* Main profile content */}
           <div className="space-y-8">
-            <div className="bg-white border border-border/40 rounded-[2rem] p-6 sm:p-8 shadow-sm space-y-6 text-left">
+            <div className="bg-white border border-emerald-800/30 rounded-[2rem] p-6 sm:p-8 shadow-md hover:shadow-lg transition-all duration-300 space-y-6 text-left relative overflow-hidden bg-gradient-to-br from-white to-emerald-500/[0.015]">
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 to-[#b4f05a]" />
               <div>
-                <h3 className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-xl text-foreground mb-3">Tentang Petani</h3>
+                <h3 className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-xl text-foreground mb-3 border-l-4 border-primary pl-3">Tentang Petani</h3>
                 <p className="text-sm font-light leading-relaxed text-muted-foreground">{bio}</p>
               </div>
 
@@ -283,13 +289,13 @@ function ProfilePage() {
 
 function ProfileField({ icon: Icon, label, value }: any) {
   return (
-    <div className="rounded-2xl bg-secondary/30 border border-border/20 p-4 flex items-center gap-3.5 hover:bg-secondary/50 transition duration-200">
-      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+    <div className="rounded-2xl bg-white border border-emerald-800/10 p-4 flex items-center gap-3.5 hover:border-emerald-600/35 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 shadow-sm">
+      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-emerald-500/10 text-emerald-800 shadow-inner">
         <Icon className="h-5 w-5" />
       </div>
       <div className="min-w-0">
-        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{label}</div>
-        <div className="font-semibold text-sm text-foreground truncate mt-0.5">{value}</div>
+        <div className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-widest leading-none mb-1">{label}</div>
+        <div className="font-extrabold text-sm text-foreground leading-normal">{value}</div>
       </div>
     </div>
   );

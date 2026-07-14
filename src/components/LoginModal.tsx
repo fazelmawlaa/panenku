@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth-context";
 import { Mail, Lock, User, Loader2, Eye, EyeOff } from "lucide-react";
-import logoRumohTani from "@/assets/rumohtani_transparent.png";
+import logoPanenku from "@/assets/logo_panenku.png";
 import farmingBg from "@/assets/farming_bg.png";
 
 interface LoginModalProps {
@@ -121,13 +121,13 @@ export function LoginModal({
           <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60" />
           <div className="relative z-10">
             <div className="mx-auto mb-4">
-              <img src={logoRumohTani} alt="RumohTani Logo" className="h-12 mx-auto object-contain" />
+              <img src={logoPanenku} alt="PANENKU Logo" className="h-16 mx-auto object-contain" />
             </div>
             <DialogHeader>
               <DialogTitle className="text-xl font-bold text-white drop-shadow-lg">
                 {tab === "login"
                   ? "Selamat Datang Kembali"
-                  : "Bergabung dengan RumohTani"}
+                  : "Bergabung dengan PANENKU"}
               </DialogTitle>
             </DialogHeader>
             <p className="mt-1 text-sm text-white/90 drop-shadow-md">

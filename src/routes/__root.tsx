@@ -75,7 +75,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       meta: [
         { charSet: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1" },
-        { title: "RumohTani — Dari Petani, Untuk Indonesia" },
+        { title: "PANENKU — Dari Petani, Untuk Indonesia" },
         {
           name: "description",
           content:
@@ -83,7 +83,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         },
         {
           property: "og:title",
-          content: "RumohTani — Dari Petani, Untuk Indonesia",
+          content: "PANENKU — Dari Petani, Untuk Indonesia",
         },
         {
           property: "og:description",

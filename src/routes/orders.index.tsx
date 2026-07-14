@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { fetchCustomerOrders } from "@/lib/products-db";
 
 export const Route = createFileRoute("/orders/")({
-  head: () => ({ meta: [{ title: "Pesanan Saya — RumohTani" }] }),
+  head: () => ({ meta: [{ title: "Pesanan Saya — PANENKU" }] }),
   component: Orders,
 });
 

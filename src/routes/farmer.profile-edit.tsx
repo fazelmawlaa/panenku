@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/farmer/profile-edit")({
-  head: () => ({ meta: [{ title: "Sunting Profil Penjual — RumohTani" }] }),
+  head: () => ({ meta: [{ title: "Sunting Profil Penjual — PANENKU" }] }),
   component: EditProfilePage,
 });
 
@@ -98,12 +98,31 @@ function EditProfilePage() {
       if (error) {
         // If columns don't exist in cache yet, fallback to standard profile save
         if (error.message.includes("column") || error.message.includes("cache") || error.message.includes("avatar_url")) {
+          
+          // Load current address column first to preserve consultation settings JSON
+          let finalAddress = location;
+          try {
+            const { data: currentProfile } = await supabase
+              .from("profiles")
+              .select("address")
+              .eq("id", user.id)
+              .maybeSingle();
+
+            if (currentProfile?.address && currentProfile.address.trim().startsWith("{")) {
+              const parsed = JSON.parse(currentProfile.address);
+              parsed.addressText = location;
+              finalAddress = JSON.stringify(parsed);
+            }
+          } catch (e) {
+            console.warn("Failed to preserve consultations JSON in profile edit:", e);
+          }
+
           const { error: fallbackError } = await supabase
             .from("profiles")
             .update({
               full_name: name,
               phone: phone,
-              address: location
+              address: finalAddress
             })
             .eq("id", user.id);
           

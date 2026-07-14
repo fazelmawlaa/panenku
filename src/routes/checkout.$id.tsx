@@ -8,13 +8,23 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { fetchProductDetail, placeOrderInSupabase, deductProductStock } from "@/lib/products-db";
+import { fetchProductDetail, placeOrderInSupabase, deductProductStock, fetchProductsFromSupabase } from "@/lib/products-db";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft, ArrowRight, CreditCard, Wallet, Building2, MapPin, ShoppingBag,
   Truck, Check, Package, ShieldCheck, Loader2, ChevronDown, Search, Plus
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  fetchShippingAddresses,
+  insertShippingAddress
+} from "@/lib/addresses-db";
+import {
+  localIndonesiaData,
+  getLocalProvinceData,
+  getLocalCityData,
+  getLocalSubdistrictData
+} from "@/components/layout/CustomerLayout";
 
 export const Route = createFileRoute("/checkout/$id")({
   validateSearch: (search: Record<string, unknown>): { qty?: number } => {
@@ -23,11 +33,29 @@ export const Route = createFileRoute("/checkout/$id")({
     };
   },
   loader: async ({ params }) => {
+    if (params.id === "cart") {
+      return {
+        id: "cart",
+        name: "Keranjang Belanja",
+        category: "Campuran",
+        type: "ready" as any,
+        farmer: "Multi",
+        farmerId: "",
+        location: "",
+        price: 0,
+        unit: "",
+        stock: 0,
+        image: "",
+        description: "",
+        rating: 5,
+        reviews: 0,
+      };
+    }
     const { product } = await fetchProductDetail(params.id);
     if (!product) throw notFound();
     return product;
   },
-  head: () => ({ meta: [{ title: "Checkout — RumohTani" }] }),
+  head: () => ({ meta: [{ title: "Checkout — PANENKU" }] }),
   component: Checkout,
 });
 
@@ -43,7 +71,6 @@ const payments = [
   { v: "ewallet", icon: Wallet, t: "E-Wallet", d: "GoPay, OVO, DANA, ShopeePay" },
   { v: "va", icon: Building2, t: "Virtual Account", d: "BCA, BNI, BRI, Mandiri" },
   { v: "card", icon: CreditCard, t: "Kartu Kredit/Debit", d: "Visa, Mastercard, JCB" },
-  { v: "cod", icon: Package, t: "Bayar di Tempat (COD)", d: "Khusus area Jabodetabek" },
 ];
 
 function Checkout() {
@@ -54,6 +81,17 @@ function Checkout() {
 
   const [qty, setQty] = useState(search.qty || 1);
   const [step, setStep] = useState<Step>(1);
+  const [checkoutItems, setCheckoutItems] = useState<(Product & { qty: number; cartItemId?: string })[]>([]);
+  const [isLoadingItems, setIsLoadingItems] = useState(true);
+
+  const handleUpdateQty = (itemId: string, newQ: number) => {
+    const safeQ = Math.max(1, newQ);
+    if (p.id === "cart") {
+      setCheckoutItems(prev => prev.map(item => item.id === itemId ? { ...item, qty: safeQ } : item));
+    } else {
+      setQty(safeQ);
+    }
+  };
 
   // Address form fields
   const [name, setName] = useState("");
@@ -90,9 +128,67 @@ function Checkout() {
   const [isLoadingData, setIsLoadingData] = useState(false);
 
   // shipping & payment
-  const [shipId, setShipId] = useState<string>("cod");
+  const [shipId, setShipId] = useState<string>("jnt");
   const [pay, setPay] = useState("ewallet");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Load checkout items (either cart or direct product)
+  useEffect(() => {
+    const loadItems = async () => {
+      if (p.id === "cart") {
+        if (!user) return;
+        setIsLoadingItems(true);
+        try {
+          const { data: cartData, error } = await supabase
+            .from("cart_items")
+            .select("*")
+            .eq("user_id", user.id);
+          
+          if (cartData && !error) {
+            const dbProducts = await fetchProductsFromSupabase();
+            const list = cartData.map((c: any) => {
+              const prod = dbProducts.find((item) => item.id === c.product_id);
+              return prod ? { ...prod, qty: c.qty, cartItemId: c.id } : null;
+            }).filter(Boolean) as (Product & { qty: number; cartItemId: string })[];
+            
+            setCheckoutItems(list);
+          }
+        } catch (err) {
+          console.error("Error loading cart items for checkout:", err);
+        } finally {
+          setIsLoadingItems(false);
+        }
+      } else {
+        setCheckoutItems([{ ...p, qty: qty }]);
+        setIsLoadingItems(false);
+      }
+    };
+    if (user) {
+      loadItems();
+    }
+  }, [p, user, qty]);
+
+  // Compute allowed payment methods based on checkoutItems
+  const allowedPaymentMethods = useMemo(() => {
+    if (checkoutItems.length === 0) return ["ewallet", "va", "card"];
+    let intersection = ["ewallet", "va", "card"];
+    checkoutItems.forEach(item => {
+      const itemMethods = item.paymentMethods || ["ewallet", "va", "card"];
+      intersection = intersection.filter(m => itemMethods.includes(m));
+    });
+    return intersection.length > 0 ? intersection : ["ewallet", "va", "card"];
+  }, [checkoutItems]);
+
+  const filteredPayments = useMemo(() => {
+    return payments.filter(pm => allowedPaymentMethods.includes(pm.v));
+  }, [allowedPaymentMethods]);
+
+  // Sync default pay state if chosen method becomes unavailable
+  useEffect(() => {
+    if (filteredPayments.length > 0 && !filteredPayments.some(pm => pm.v === pay)) {
+      setPay(filteredPayments[0].v);
+    }
+  }, [filteredPayments, pay]);
 
   useEffect(() => {
     if (!loading && !session) {
@@ -105,28 +201,30 @@ function Checkout() {
   useEffect(() => {
     const loadAddresses = async () => {
       if (user?.id) {
-        const { data, error } = await supabase
-          .from("shipping_addresses")
-          .select("*")
-          .order("is_default", { ascending: false });
-        if (data && !error && data.length > 0) {
-          setSavedAddresses(data);
-          const def = data.find(a => a.is_default) || data[0];
-          if (def) {
-            setSelectedAddressId(def.id);
-            setName(def.recipient_name);
-            setPhone(def.recipient_phone);
-            setProvince(def.province);
-            setCity(def.city);
-            setDistrict(def.district);
-            setPostal(def.postal_code);
-            setAddr(def.street_address);
-            setDetails(def.details || "");
-            setShowNewAddressForm(false);
+        try {
+          const data = await fetchShippingAddresses(user.id);
+          if (data && data.length > 0) {
+            setSavedAddresses(data);
+            const def = data.find(a => a.is_default) || data[0];
+            if (def) {
+              setSelectedAddressId(def.id);
+              setName(def.recipient_name);
+              setPhone(def.recipient_phone);
+              setProvince(def.province);
+              setCity(def.city);
+              setDistrict(def.district);
+              setPostal(def.postal_code);
+              setAddr(def.street_address);
+              setDetails(def.details || "");
+              setShowNewAddressForm(false);
+            } else {
+              setShowNewAddressForm(true);
+            }
           } else {
             setShowNewAddressForm(true);
           }
-        } else {
+        } catch (err) {
+          console.error(err);
           setShowNewAddressForm(true);
         }
       }
@@ -184,10 +282,9 @@ function Checkout() {
         setCitiesList(data || []);
       } catch (err) {
         console.warn("API regencies error, loading fallback local cities", err);
-        setCitiesList([
-          { id: `${tempProvince.id}-c1`, name: "Kota Banda Aceh" },
-          { id: `${tempProvince.id}-c2`, name: "Kab. Aceh Besar" }
-        ]);
+        const provData = getLocalProvinceData(tempProvince.name) || {};
+        const staticCities = Object.keys(provData).map((c) => ({ id: c, name: c }));
+        setCitiesList(staticCities);
       } finally {
         setIsLoadingData(false);
       }
@@ -211,9 +308,9 @@ function Checkout() {
         setSubdistrictsList(data || []);
       } catch (err) {
         console.warn("API districts error, loading fallback local subdistricts", err);
-        setSubdistrictsList([
-          { id: `${tempCity.id}-d1`, name: "Kecamatan Syiah Kuala" }
-        ]);
+        const cityData = getLocalCityData(tempProvince?.name || "", tempCity.name) || {};
+        const staticSubsList = Object.keys(cityData).map((s) => ({ id: s, name: s }));
+        setSubdistrictsList(staticSubsList);
       } finally {
         setIsLoadingData(false);
       }
@@ -227,6 +324,18 @@ function Checkout() {
       setPostalCodesList([]);
       return;
     }
+
+    // Attempt local database first
+    const staticCodes = getLocalSubdistrictData(
+      tempProvince?.name || "",
+      tempCity?.name || "",
+      tempSubdistrict.name
+    );
+    if (staticCodes && staticCodes.length > 0) {
+      setPostalCodesList(staticCodes.map((c) => ({ id: c, name: c })));
+      return;
+    }
+
     const cleanId = tempSubdistrict.id.replace(/\D/g, "");
     const baseCode = 10000 + (parseInt(cleanId) % 89999 || 40000);
     const mockCodes = [
@@ -335,8 +444,14 @@ function Checkout() {
   };
 
   const ship = shippingMethods.find((s) => s.id === shipId) ?? shippingMethods[0];
-  const subtotal = p.price * qty;
-  const total = subtotal + ship.price;
+
+  const subtotal = useMemo(() => {
+    return checkoutItems.reduce((sum, item) => sum + item.price * item.qty, 0);
+  }, [checkoutItems]);
+
+  const total = useMemo(() => {
+    return subtotal + ship.price;
+  }, [subtotal, ship.price]);
 
   const fullShippingAddress = useMemo(() => {
     return `${addr}${details ? `, ${details}` : ""}, Kec. ${district}, Kota ${city}, Prov. ${province}, ${postal}`;
@@ -372,47 +487,72 @@ function Checkout() {
       toast.error("Silakan masuk terlebih dahulu.");
       return;
     }
+    if (checkoutItems.length === 0) {
+      toast.error("Tidak ada produk untuk dicheckout.");
+      return;
+    }
     setIsSubmitting(true);
-    const orderId = "ORD-" + Math.floor(2500 + Math.random() * 9999);
     try {
       // 1. If adding a new address and user checked "save to addresses", insert to DB
       if (showNewAddressForm && saveToAddresses) {
-        await supabase
-          .from("shipping_addresses")
-          .insert([{
-            user_id: user.id,
-            recipient_name: name,
-            recipient_phone: phone,
-            province: province,
-            city: city,
-            district: district,
-            postal_code: postal,
-            street_address: addr,
-            details: details,
-            is_default: savedAddresses.length === 0
-          }]);
+        await insertShippingAddress(user.id, {
+          recipient_name: name,
+          recipient_phone: phone,
+          province: province,
+          city: city,
+          district: district,
+          postal_code: postal,
+          street_address: addr,
+          details: details || null,
+          is_default: savedAddresses.length === 0
+        });
       }
 
-      // 2. Insert order
-      await placeOrderInSupabase({
-        id: orderId,
-        user_id: user.id,
-        product_id: p.id,
-        product_name: p.name,
-        qty: `${qty} ${p.unit}`,
-        total: total,
-        status: "Menunggu",
-        date: new Date().toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }),
-        farmer_id: p.farmerId === "mock" ? null : p.farmerId,
-        shipping_address: `${fullShippingAddress}${notes ? ` (Catatan: ${notes})` : ""}`,
-        buyer_name: name,
-        buyer_phone: phone
-      });
+      // 2. Loop and place orders for each item
+      const orderIds: string[] = [];
+      for (let idx = 0; idx < checkoutItems.length; idx++) {
+        const item = checkoutItems[idx];
+        const orderId = "ORD-" + Math.floor(2500 + Math.random() * 9999) + (checkoutItems.length > 1 ? `-${idx + 1}` : "");
+        orderIds.push(orderId);
+
+        // Subtotal for this item, add shipping to first item
+        const itemSubtotal = item.price * item.qty;
+        const itemTotal = itemSubtotal + (idx === 0 ? ship.price : 0);
+
+        await placeOrderInSupabase({
+          id: orderId,
+          user_id: user.id,
+          product_id: item.id,
+          product_name: item.name,
+          qty: `${item.qty} ${item.unit}`,
+          total: itemTotal,
+          status: "Menunggu",
+          date: new Date().toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }),
+          farmer_id: item.farmerId === "mock" ? null : item.farmerId,
+          shipping_address: `${fullShippingAddress}${notes ? ` (Catatan: ${notes})` : ""}`,
+          buyer_name: name,
+          buyer_phone: phone
+        });
+
+        // Deduct stock
+        await deductProductStock(item.id, item.qty);
+      }
+
+      // 3. Clear cart items if checked out from cart
+      if (p.id === "cart") {
+        const cartItemIds = checkoutItems.map(item => item.cartItemId).filter(Boolean);
+        if (cartItemIds.length > 0) {
+          await supabase
+            .from("cart_items")
+            .delete()
+            .in("id", cartItemIds);
+        }
+      }
       
-      // Deduct stock in real-time
-      await deductProductStock(p.id, qty);
-      
-      toast.success(`Pesanan ${orderId} berhasil dibuat!`);
+      toast.success(checkoutItems.length > 1 
+        ? `Berhasil membuat ${checkoutItems.length} pesanan!` 
+        : `Pesanan ${orderIds[0]} berhasil dibuat!`
+      );
       navigate({ to: "/orders" });
     } catch (err: any) {
       toast.error(err.message || "Gagal membuat pesanan.");
@@ -424,9 +564,13 @@ function Checkout() {
   return (
     <CustomerLayout>
       <div className="mx-auto max-w-full px-4 sm:px-8 md:px-12 py-8 text-left">
-        <Link to="/products/$id" params={{ id: p.id }} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4">
+        <button 
+          type="button" 
+          onClick={() => window.history.back()} 
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4 bg-transparent border-none p-0 cursor-pointer"
+        >
           <ArrowLeft className="h-4 w-4" /> Kembali
-        </Link>
+        </button>
         <h1 className="font-display text-3xl font-bold mb-6">Checkout</h1>
 
         {/* Steps header */}
@@ -735,9 +879,9 @@ function Checkout() {
             {step === 3 && (
               <div className="glass-card rounded-2xl p-5 sm:p-6">
                 <div className="flex items-center gap-2 font-display font-bold text-lg mb-1"><CreditCard className="h-5 w-5 text-primary" /> Metode Pembayaran</div>
-                <p className="text-sm text-muted-foreground mb-5">Pembayaran diamankan oleh sistem RumohTani.</p>
+                <p className="text-sm text-muted-foreground mb-5">Pembayaran diamankan oleh sistem PANENKU.</p>
                 <RadioGroup value={pay} onValueChange={setPay} className="space-y-2.5">
-                  {payments.map((m) => {
+                  {filteredPayments.map((m) => {
                     const Icon = m.icon;
                     return (
                       <label
@@ -760,27 +904,19 @@ function Checkout() {
                 </RadioGroup>
                 <div className="mt-4 flex items-start gap-2 rounded-xl bg-leaf-soft/15 border border-primary/15 p-3 text-xs text-foreground/80">
                   <ShieldCheck className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                  <div>Dana Anda ditahan sistem RumohTani dan baru diteruskan ke petani setelah pesanan diterima dengan baik.</div>
+                  <div>Dana Anda ditahan sistem PANENKU dan baru diteruskan ke petani setelah pesanan diterima dengan baik.</div>
                 </div>
               </div>
             )}
 
             {/* Navigation buttons */}
-            <div className="flex items-center justify-between gap-3">
-              <Button
-                variant="outline"
-                className="rounded-full"
-                disabled={step === 1}
-                onClick={() => setStep((s) => (s > 1 ? ((s - 1) as Step) : s))}
-              >
-                <ArrowLeft className="h-4 w-4 mr-1" /> Kembali
-              </Button>
+            <div className="flex items-center justify-end gap-3">
               {step < 3 ? (
                 <Button className="rounded-full gap-1 font-bold" onClick={next}>
                   Lanjut <ArrowRight className="h-4 w-4" />
                 </Button>
               ) : (
-                <Button disabled={isSubmitting} className="rounded-full gap-2 shadow-soft font-bold" size="lg" onClick={placeOrder}>
+                <Button disabled={isSubmitting} className="rounded-full gap-2 shadow-soft font-bold bg-primary hover:bg-primary-hover text-white px-8" size="lg" onClick={placeOrder}>
                   {isSubmitting ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" /> Memproses...
@@ -800,28 +936,63 @@ function Checkout() {
             <div className="glass-card rounded-2xl p-5 space-y-4">
               <h3 className="font-display font-bold">Ringkasan Pesanan</h3>
 
-              <div className="flex items-center gap-3 pb-4 border-b border-border/60">
-                <img src={p.image} className="h-16 w-16 rounded-xl object-cover" alt={p.name} />
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-sm truncate">{p.name}</div>
-                  <div className="text-xs text-muted-foreground">{formatRupiah(p.price)} / {p.unit}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">oleh {p.farmer}</div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <Button variant="outline" size="icon" className="rounded-full h-7 w-7" onClick={() => setQty(Math.max(1, qty - 1))}>−</Button>
-                  <span className="w-6 text-center text-sm font-semibold">{qty}</span>
-                  <Button variant="outline" size="icon" className="rounded-full h-7 w-7" onClick={() => setQty(qty + 1)}>+</Button>
-                </div>
+              <div className="space-y-4 max-h-[320px] overflow-y-auto pb-4 border-b border-border/60">
+                {isLoadingItems ? (
+                  <div className="flex items-center gap-2 py-4 justify-center text-xs text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" /> Memuat item...
+                  </div>
+                ) : checkoutItems.length === 0 ? (
+                  <div className="text-xs text-muted-foreground text-center py-4">Tidak ada produk.</div>
+                ) : (
+                  checkoutItems.map((item) => (
+                    <div key={item.id} className="flex items-center gap-3 pb-4 border-b border-border/60 last:border-0 last:pb-0">
+                      <img src={item.image} className="h-16 w-16 rounded-xl object-cover shrink-0" alt={item.name} />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm truncate">{item.name}</div>
+                        <div className="text-xs text-muted-foreground">{formatRupiah(item.price)} / {item.unit}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">oleh {item.farmer}</div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="rounded-full h-7 w-7" 
+                          onClick={() => handleUpdateQty(item.id, item.qty - 1)}
+                        >
+                          −
+                        </Button>
+                        <span className="w-6 text-center text-sm font-semibold">{item.qty}</span>
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          className="rounded-full h-7 w-7" 
+                          onClick={() => handleUpdateQty(item.id, item.qty + 1)}
+                        >
+                          +
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
 
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Subtotal ({qty} {p.unit})</span><span>{formatRupiah(subtotal)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Ongkir ({ship.name})</span><span>{formatRupiah(ship.price)}</span></div>
-                <div className="flex justify-between text-xs"><span className="text-muted-foreground">Estimasi tiba</span><span className="text-primary font-medium">{ship.eta}</span></div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Subtotal ({checkoutItems.reduce((sum, item) => sum + item.qty, 0)} unit)</span>
+                  <span>{formatRupiah(subtotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Ongkir ({ship.name})</span>
+                  <span className="font-semibold">{formatRupiah(ship.price)}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Estimasi tiba</span>
+                  <span className="text-primary font-medium">{ship.eta}</span>
+                </div>
               </div>
 
               <div className="border-t border-border pt-3 flex justify-between font-display text-lg font-bold">
-                <span>Total</span>
+                <span>Total Harga</span>
                 <span className="text-primary">{formatRupiah(total)}</span>
               </div>
 

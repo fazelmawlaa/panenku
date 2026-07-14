@@ -48,6 +48,9 @@ export function AuthProvider({
   const login = useCallback(async (email: string, password: string) => {
     const result = await loginUser({ data: { email, password } });
     if (result.success && result.session) {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("panenku_login_time", Date.now().toString());
+      }
       await supabase.auth.setSession({
         access_token: result.session.access_token,
         refresh_token: result.session.refresh_token,
@@ -67,6 +70,9 @@ export function AuthProvider({
         data: { name, email, password, role },
       });
       if (result.success && result.session) {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("panenku_login_time", Date.now().toString());
+        }
         await supabase.auth.setSession({
           access_token: result.session.access_token,
           refresh_token: result.session.refresh_token,

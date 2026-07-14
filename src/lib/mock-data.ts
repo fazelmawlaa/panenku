@@ -18,6 +18,7 @@ export interface Product {
   reviews: number;
   image: string;
   description: string;
+  paymentMethods?: string[];
 }
 
 const img = (q: string) =>
@@ -211,7 +212,6 @@ export const salesData = [
 export const orderStatuses = ["Menunggu", "Dibayar", "Diproses", "Sedang Panen", "Pengiriman", "Selesai"];
 
 export const shippingMethods = [
-  { id: "cod", name: "COD (Bayar di Tempat)", courier: "Kurir Internal / COD", eta: "Bayar tunai saat barang sampai", price: 15000, desc: "Bayar di tempat saat barang diterima" },
   { id: "jnt", name: "J&T Express", courier: "J&T EZ", eta: "2-3 hari", price: 18000, desc: "Pengiriman cepat dan terpercaya" },
   { id: "jne", name: "JNE Express", courier: "JNE YES", eta: "1-2 hari", price: 28000, desc: "Layanan ekspres satu hari sampai" },
   { id: "pos", name: "Pos Indonesia", courier: "Pos Kilat Khusus", eta: "3-5 hari", price: 12000, desc: "Layanan pos menjangkau seluruh pelosok" },

@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { FarmerLayout } from "@/components/layout/FarmerLayout";
+import bgDashboard from "@/assets/bg_dashboard.jpg";
 import { priceTrend } from "@/lib/mock-data";
 import { CloudSun, Droplets, Wind, TrendingUp, Sparkles, Sprout, CalendarDays, Compass } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/farmer/harvest")({
-  head: () => ({ meta: [{ title: "Kalender Tanam & Panen — RumohTani" }] }),
+  head: () => ({ meta: [{ title: "Kalender Tanam & Panen — PANENKU" }] }),
   component: HarvestForecast,
 });
 
@@ -29,15 +30,21 @@ function HarvestForecast() {
         <div className="absolute top-[5%] right-[-10%] w-[35vw] h-[35vw] rounded-full bg-emerald-500/5 blur-[100px] pointer-events-none" />
           
           {/* Header Card */}
-          <div className="bg-white border border-border/40 rounded-[2rem] p-6 sm:p-8 flex flex-wrap items-center justify-between gap-4 shadow-sm">
-            <div>
-              <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Perencanaan Lahan</div>
-              <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-3xl font-extrabold text-foreground tracking-tight mt-1">
-                Kalender <span className="font-['Playfair_Display',serif] italic font-light text-primary">Tanam & Panen</span>
+          <div 
+            className="relative overflow-hidden border border-emerald-800 rounded-[1.5rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-lg text-white"
+            style={{ 
+              backgroundImage: `linear-gradient(to right, rgba(6, 78, 59, 0.95), rgba(6, 78, 59, 0.45)), url(${bgDashboard})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center"
+            }}
+          >
+            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: "radial-gradient(white 1px, transparent 1px)", backgroundSize: "16px 16px" }} />
+            <div className="relative z-10">
+              <div className="text-xs font-bold text-[#b4f05a] uppercase tracking-wider">Perencanaan Lahan</div>
+              <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">
+                Kalender <span className="font-['Playfair_Display',serif] italic font-light text-[#b4f05a]">Tanam & Panen</span>
               </h1>
-              <p className="text-sm text-muted-foreground font-light mt-1.5">Rencanakan musim tanam, atur siklus pemupukan organik, dan jadwalkan estimasi panen pre-order komoditas Anda secara presisi.</p>
             </div>
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-primary text-white shrink-0"><CalendarDays className="h-6 w-6" /></div>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-8">

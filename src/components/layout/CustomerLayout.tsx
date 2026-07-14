@@ -1,9 +1,9 @@
-import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import { Link, useRouterState, useNavigate, useRouter } from "@tanstack/react-router";
 import {
   ShoppingCart, User, Search, Menu, X, LogOut,
-  Home, BookOpen, Recycle, LayoutDashboard, Sprout, MapPin, Phone, Check, ChevronDown, RefreshCw
+  Home, BookOpen, Recycle, LayoutDashboard, Sprout, MapPin, Phone, Check, ChevronDown, RefreshCw, Plus, Trash2
 } from "lucide-react";
-import logoRumohTani from "@/assets/rumohtani_transparent.png";
+import logoPanenku from "@/assets/logo_panenku.png";
 import { useState, useEffect, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
@@ -12,6 +12,12 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import {
+  fetchShippingAddresses,
+  insertShippingAddress,
+  setDefaultShippingAddress,
+  deleteShippingAddress
+} from "@/lib/addresses-db";
 
 const nav = [
   { to: "/products", label: "Marketplace", icon: BookOpen },
@@ -20,323 +26,198 @@ const nav = [
 ] as const;
 
 // Static regions database mapping representing Indonesia provinces, cities, districts, and zip codes for fallback
-const localIndonesiaData: Record<string, Record<string, Record<string, string[]>>> = {
-  "ACEH": {
+export const localIndonesiaData: Record<string, Record<string, Record<string, string[]>>> = {
+  "Aceh": {
     "Banda Aceh": {
       "Baiturrahman": ["23241", "23244"],
+      "Kuta Alam": ["23121", "23126"],
+      "Meuraxa": ["23231"],
+      "Jaya Baru": ["23232"],
+      "Lueng Bata": ["23247"],
+      "Kuta Raja": ["23127"],
       "Syiah Kuala": ["23111", "23115"],
-      "Ulee Kareng": ["23118", "23119"]
+      "Ulee Kareng": ["23118", "23119"],
+      "Banda Raya": ["23238"]
+    },
+    "Sabang": {
+      "Sukajaya": ["23511"],
+      "Sukakarya": ["23512"]
     },
     "Lhokseumawe": {
       "Banda Sakti": ["24351", "24354"],
-      "Muara Dua": ["24352"]
-    }
-  },
-  "BALI": {
-    "Denpasar": {
-      "Denpasar Barat": ["80111", "80119", "80120"],
-      "Denpasar Timur": ["80231", "80239", "80240"],
-      "Denpasar Selatan": ["80221", "80229", "80230"],
-      "Denpasar Utara": ["80115", "80116"]
+      "Blang Mangat": ["24355"],
+      "Muara Dua": ["24352"],
+      "Muara Satu": ["24353"]
     },
-    "Badung": {
-      "Kuta": ["80361", "80362"],
-      "Mengwi": ["80351", "80352"],
-      "Canggu": ["80363", "80364"]
-    }
-  },
-  "BANGKA BELITUNG": {
-    "Pangkal Pinang": {
-      "Gerunggang": ["33111", "33112"],
-      "Bukit Intan": ["33141", "33144"]
-    }
-  },
-  "BANTEN": {
-    "Tangerang": {
-      "Cipondoh": ["15141", "15148"],
-      "Karawaci": ["15115", "15116"],
-      "Ciledug": ["15151", "15157"]
+    "Langsa": {
+      "Langsa Kota": ["24411"],
+      "Langsa Barat": ["24415"],
+      "Langsa Lama": ["24416"],
+      "Langsa Timur": ["24417"],
+      "Langsa Baro": ["24418"]
     },
-    "Tangerang Selatan": {
-      "Serpong": ["15310", "15318"],
-      "Ciputat": ["15411", "15414"],
-      "Pondok Aren": ["15220", "15227"]
+    "Subulussalam": {
+      "Simpang Kiri": ["24782"],
+      "Penanggalan": ["24783"],
+      "Rundeng": ["24784"],
+      "Sultan Daulat": ["24785"],
+      "Longkib": ["24786"]
     },
-    "Serang": {
-      "Cipocok Jaya": ["42121", "42127"],
-      "Serang Kota": ["42111", "42118"]
-    }
-  },
-  "BENGKULU": {
-    "Bengkulu Kota": {
-      "Gading Cempaka": ["38221", "38225"],
-      "Muara Bangkahulu": ["38119", "38122"]
-    }
-  },
-  "DI YOGYAKARTA": {
-    "Yogyakarta": {
-      "Danurejan": ["55211", "55213"],
-      "Gondokusuman": ["55221", "55225"],
-      "Mantinejeron": ["55141", "55143"],
-      "Umbulharjo": ["55161", "55167"]
+    "Aceh Besar": {
+      "Darul Imarah": ["23352"],
+      "Darussalam": ["23373"],
+      "Ingin Jaya": ["23371"],
+      "Krueng Barona Jaya": ["23373"],
+      "Lhoknga": ["23387"],
+      "Leupung": ["23381"],
+      "Mesjid Raya": ["23381"],
+      "Montasik": ["23362"],
+      "Peukan Bada": ["23239"],
+      "Seulimeum": ["23361"]
     },
-    "Sleman": {
-      "Depok Sleman": ["55281", "55283"],
-      "Mlati": ["55284", "55285"],
-      "Gamping": ["55291", "55294"]
+    "Pidie": {
+      "Sigli": ["24111"],
+      "Sakti": ["24171"],
+      "Mutiara": ["24151"],
+      "Indrajaya": ["24181"],
+      "Kembang Tanjong": ["24182"]
     },
-    "Bantul": {
-      "Sewon": ["55187", "55188"],
-      "Kasihan": ["55181", "55184"]
-    }
-  },
-  "DKI JAKARTA": {
-    "Jakarta Selatan": {
-      "Kebayoran Baru": ["12110", "12120", "12130"],
-      "Tebet": ["12810", "12820", "12830"],
-      "Cilandak": ["12410", "12420", "12430"],
-      "Pasar Minggu": ["12510", "12520"],
-      "Pancoran": ["12780", "12790"]
+    "Pidie Jaya": {
+      "Meureudu": ["24186"],
+      "Bandar Baru": ["24184"],
+      "Trienggadeng": ["24187"],
+      "Panteraja": ["24188"],
+      "Ulim": ["24189"]
     },
-    "Jakarta Pusat": {
-      "Menteng": ["10310", "10320", "10330"],
-      "Kemayoran": ["10610", "10620", "10630"],
-      "Sawah Besar": ["10710", "10720"],
-      "Tanah Abang": ["10210", "10220"]
+    "Bireuen": {
+      "Kota Juang": ["24251"],
+      "Jeumpa": ["24261"],
+      "Peusangan": ["24271"],
+      "Juli": ["24262"],
+      "Samalanga": ["24264"]
     },
-    "Jakarta Timur": {
-      "Jatinegara": ["13310", "13320"],
-      "Duren Sawit": ["13440", "13450"],
-      "Pulogadung": ["13210", "13220"],
-      "Cakung": ["13910", "13950"]
+    "Aceh Utara": {
+      "Lhoksukon": ["24382"],
+      "Dewantara": ["24394"],
+      "Syamtalira Bayu": ["24391"],
+      "Tanah Luas": ["24385"],
+      "Matangkuli": ["24386"]
     },
-    "Jakarta Barat": {
-      "Cengkareng": ["11730", "11740"],
-      "Kebon Jeruk": ["11530", "11540"],
-      "Grogol Petamburan": ["11440", "11450"],
-      "Palmerah": ["11480", "11490"]
+    "Aceh Timur": {
+      "Idi Rayeuk": ["24454"],
+      "Peureulak": ["24462"],
+      "Peunaron": ["24474"],
+      "Rantau Selamat": ["24452"],
+      "Simpang Ulim": ["24457"]
     },
-    "Jakarta Utara": {
-      "Kelapa Gading": ["14240", "14250"],
-      "Penjaringan": ["14460", "14470"],
-      "Tanjung Priok": ["14310", "14320"]
-    }
-  },
-  "JAWA BARAT": {
-    "Bandung": {
-      "Coblong": ["40132", "40135", "40139"],
-      "Sukajadi": ["40161", "40162", "40163"],
-      "Cibeunying": ["40191", "40192"],
-      "Lengkong": ["40261", "40262"],
-      "Astana Anyar": ["40241", "40242"]
+    "Aceh Tamiang": {
+      "Karang Baru": ["24476"],
+      "Kejuruan Muda": ["24477"],
+      "Manyak Payed": ["24478"],
+      "Rantau": ["24479"],
+      "Seruway": ["24475"]
     },
-    "Bogor": {
-      "Bogor Timur": ["16141", "16142"],
-      "Bogor Tengah": ["16121", "16122"],
-      "Bogor Barat": ["16111", "16112"],
-      "Cibinong": ["16911", "16914"]
+    "Aceh Tengah": {
+      "Lut Tawar": ["24519"],
+      "Bebesen": ["24552"],
+      "Pegasing": ["24561"],
+      "Kebayakan": ["24514"],
+      "Silih Nara": ["24564"]
     },
-    "Depok": {
-      "Beji": ["16421", "16424"],
-      "Pancoran Mas": ["16431", "16436"],
-      "Sukmajaya": ["16411", "16418"]
+    "Bener Meriah": {
+      "Bukit": ["24581"],
+      "Permata": ["24582"],
+      "Timang Gajah": ["24583"],
+      "Wih Pesam": ["24584"],
+      "Bandar": ["24585"]
     },
-    "Bekasi": {
-      "Bekasi Barat": ["17131", "17134"],
-      "Bekasi Timur": ["17111", "17113"],
-      "Pondok Gede": ["17411", "17415"]
-    }
-  },
-  "JAWA TENGAH": {
-    "Semarang": {
-      "Tembalang": ["50275", "50277"],
-      "Banyumanik": ["50261", "50264"],
-      "Pedurungan": ["50191", "50198"]
+    "Aceh Barat": {
+      "Johan Pahlawan": ["23611"],
+      "Meureubo": ["23681"],
+      "Samatiga": ["23682"],
+      "Arongan Lambalek": ["23652"],
+      "Woyla": ["23657"]
     },
-    "Surakarta": {
-      "Banjarsari": ["57131", "57139"],
-      "Laweyan": ["57141", "57149"]
-    }
-  },
-  "JAWA TIMUR": {
-    "Surabaya": {
-      "Tegalsari": ["60261", "60262"],
-      "Gubeng": ["60281", "60285"],
-      "Genteng": ["60271", "60275"],
-      "Wonokromo": ["60241", "60244"]
+    "Nagan Raya": {
+      "Suka Makmue": ["23661"],
+      "Kuala": ["23662"],
+      "Seunagan": ["23663"],
+      "Darul Makmur": ["23665"],
+      "Beutong": ["23666"]
     },
-    "Malang": {
-      "Klojen": ["65111", "65119"],
-      "Lowokwaru": ["65141", "65145"]
-    }
-  },
-  "SUMATERA UTARA": {
-    "Medan": {
-      "Medan Baru": ["20152", "20154"],
-      "Medan Selayang": ["20131", "20137"],
-      "Medan Petisah": ["20111", "20112"]
-    }
-  },
-  "SUMATERA BARAT": {
-    "Padang": {
-      "Padang Barat": ["25111", "25119"],
-      "Padang Timur": ["25121", "25129"]
-    }
-  },
-  "RIAU": {
-    "Pekanbaru": {
-      "Tampan": ["28291", "28294"],
-      "Senapelan": ["28151", "28156"]
-    }
-  },
-  "KEPULAWAN RIAU": {
-    "Batam": {
-      "Batam Kota": ["29461", "29464"],
-      "Lubuk Baja": ["29431", "29433"]
-    }
-  },
-  "SUMATERA SELATAN": {
-    "Palembang": {
-      "Ilir Barat I": ["30137", "30139"],
-      "Seberang Ulu I": ["30251", "30257"]
-    }
-  },
-  "LAMPUNG": {
-    "Bandar Lampung": {
-      "Kedaton": ["35141", "35149"],
-      "Tanjung Karang Pusat": ["35111", "35118"]
-    }
-  },
-  "KALIMANTAN BARAT": {
-    "Pontianak": {
-      "Pontianak Kota": ["78111", "78116"],
-      "Pontianak Selatan": ["78121", "78124"]
-    }
-  },
-  "KALIMANTAN TIMUR": {
-    "Samarinda": {
-      "Samarinda Kota": ["75111", "75117"],
-      "Samarinda Ulu": ["75121", "75127"]
+    "Aceh Jaya": {
+      "Calang": ["23654"],
+      "Krueng Sabee": ["23655"],
+      "Panga": ["23656"],
+      "Teunom": ["23657"],
+      "Setia Bakti": ["23658"]
     },
-    "Balikpapan": {
-      "Balikpapan Kota": ["76111", "76114"],
-      "Balikpapan Selatan": ["76115", "76117"]
-    }
-  },
-  "SULAWESI UTARA": {
-    "Manado": {
-      "Wenang": ["95111", "95117"],
-      "Sario": ["95114", "95115"]
-    }
-  },
-  "SULAWESI SELATAN": {
-    "Makassar": {
-      "Rappocini": ["90222", "90224"],
-      "Panakkukang": ["90231", "90234"],
-      "Ujung Pandang": ["90111", "90115"]
-    }
-  },
-  "MALUKU": {
-    "Ambon": {
-      "Sirimau": ["97121", "97129"]
-    }
-  },
-  "GORONTALO": {
-    "Gorontalo Kota": {
-      "Kota Selatan": ["96111", "96115"],
-      "Kota Tengah": ["96116", "96118"]
-    }
-  },
-  "JAMBI": {
-    "Jambi Kota": {
-      "Telanaipura": ["36121", "36124"],
-      "Jelutung": ["36131", "36135"]
-    }
-  },
-  "KALIMANTAN SELATAN": {
-    "Banjarmasin": {
-      "Banjarmasin Tengah": ["70111", "70118"],
-      "Banjarmasin Utara": ["70121", "70125"]
-    }
-  },
-  "KALIMANTAN TENGAH": {
-    "Palangkaraya": {
-      "Pahandut": ["73111", "73115"],
-      "Jekan Raya": ["73112", "73118"]
-    }
-  },
-  "KALIMANTAN UTARA": {
-    "Tanjung Selor": {
-      "Tanjung Selor Hilir": ["77211", "77215"]
-    }
-  },
-  "MALUKU UTARA": {
-    "Ternate": {
-      "Ternate Selatan": ["97711", "97715"],
-      "Ternate Utara": ["97721", "97725"]
-    }
-  },
-  "NUSA TENGGARA BARAT": {
-    "Mataram": {
-      "Ampenan": ["83111", "83114"],
-      "Cakranegara": ["83231", "83239"]
-    }
-  },
-  "NUSA TENGGARA TIMUR": {
-    "Kupang": {
-      "Alak": ["85231", "85239"],
-      "Kelapa Lima": ["85221", "85228"]
-    }
-  },
-  "SULAWESI BARAT": {
-    "Mamuju": {
-      "Mamuju Kota": ["91511", "91515"]
-    }
-  },
-  "SULAWESI TENGAH": {
-    "Palu": {
-      "Palu Timur": ["94111", "94118"],
-      "Palu Barat": ["94121", "94125"]
-    }
-  },
-  "SULAWESI TENGGARA": {
-    "Kendari": {
-      "Kadia": ["93117", "93118"],
-      "Wua-Wua": ["93115", "93116"]
-    }
-  },
-  "PAPUA": {
-    "Jayapura": {
-      "Jayapura Utara": ["99111", "99119"]
-    }
-  },
-  "PAPUA BARAT": {
-    "Manokwari": {
-      "Manokwari Barat": ["98311", "98315"]
-    }
-  },
-  "PAPUA SELATAN": {
-    "Merauke": {
-      "Merauke Kota": ["99611", "99615"]
-    }
-  },
-  "PAPUA TENGAH": {
-    "Nabire": {
-      "Nabire Kota": ["98811", "98815"]
-    }
-  },
-  "PAPUA PEGUNUNGAN": {
-    "Wamena": {
-      "Wamena Kota": ["99511", "99515"]
-    }
-  },
-  "PAPUA BARAT DAYA": {
-    "Sorong": {
-      "Sorong Barat": ["98411", "98415"]
+    "Aceh Barat Daya": {
+      "Blangpidie": ["23764"],
+      "Susoh": ["23765"],
+      "Manggeng": ["23766"],
+      "Tangan-Tangan": ["23767"],
+      "Babah Rot": ["23768"]
+    },
+    "Aceh Selatan": {
+      "Tapaktuan": ["23711"],
+      "Labuhan Haji": ["23761"],
+      "Meukek": ["23754"],
+      "Sama Dua": ["23752"],
+      "Kluet Utara": ["23772"]
+    },
+    "Aceh Singkil": {
+      "Singkil": ["24785"],
+      "Gunung Meriah": ["24791"],
+      "Simpang Kanan": ["24784"],
+      "Danau Paris": ["24792"],
+      "Pulau Banyak": ["24795"]
+    },
+    "Simeulue": {
+      "Simeulue Timur": ["23891"],
+      "Simeulue Tengah": ["23892"],
+      "Teupah Barat": ["23893"],
+      "Teupah Selatan": ["23894"],
+      "Salang": ["23895"]
+    },
+    "Gayo Lues": {
+      "Blangkejeren": ["24653"],
+      "Kutapanjang": ["24654"],
+      "Rikit Gaib": ["24655"],
+      "Terangun": ["24656"],
+      "Pining": ["24657"]
     }
   }
 };
 
+export const normalizeName = (name: string) => {
+  if (!name) return "";
+  return name.toUpperCase()
+    .replace(/^(KABUPATEN|KOTA)\s+/, "")
+    .trim();
+};
+
+export const getLocalProvinceData = (provName: string) => {
+  const normProv = normalizeName(provName);
+  const provKey = Object.keys(localIndonesiaData).find(k => normalizeName(k) === normProv);
+  return provKey ? localIndonesiaData[provKey] : null;
+};
+
+export const getLocalCityData = (provName: string, cityName: string) => {
+  const provData = getLocalProvinceData(provName);
+  if (!provData) return null;
+  const normCity = normalizeName(cityName);
+  const cityKey = Object.keys(provData).find(k => normalizeName(k) === normCity);
+  return cityKey ? provData[cityKey] : null;
+};
+
+export const getLocalSubdistrictData = (provName: string, cityName: string, subName: string) => {
+  const cityData = getLocalCityData(provName, cityName);
+  if (!cityData) return null;
+  const normSub = normalizeName(subName);
+  const subKey = Object.keys(cityData).find(k => normalizeName(k) === normSub);
+  return subKey ? cityData[subKey] : null;
+};
 
 export function CustomerLayout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -344,6 +225,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
   const { user, isLoggedIn, logout } = useAuth();
   const navigate = useNavigate();
   const activeNav = nav;
+  const router = useRouter();
 
   useEffect(() => {
     const resetScroll = () => {
@@ -375,6 +257,9 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
 
   // 2. Shipping Address Modal states
   const [showAddressModal, setShowAddressModal] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [showNewAddressForm, setShowNewAddressForm] = useState(false);
+  const [makeDefault, setMakeDefault] = useState(true);
   const [addressRecipientName, setAddressRecipientName] = useState("");
   const [addressRecipientPhone, setAddressRecipientPhone] = useState("");
   const [addressStreet, setAddressStreet] = useState("");
@@ -469,7 +354,8 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
         setCitiesList(data || []);
       } catch (err) {
         console.warn("API regencies error, loading fallback local cities", err);
-        const staticCities = Object.keys(localIndonesiaData[tempProvince.name] || {}).map((c) => ({ id: c, name: c }));
+        const provData = getLocalProvinceData(tempProvince.name) || {};
+        const staticCities = Object.keys(provData).map((c) => ({ id: c, name: c }));
         setCitiesList(staticCities);
       } finally {
         setIsLoadingData(false);
@@ -495,8 +381,8 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
         setSubdistrictsList(data || []);
       } catch (err) {
         console.warn("API districts error, loading fallback local subdistricts", err);
-        const staticSubs = (localIndonesiaData[tempProvince?.name || ""]?.[tempCity.name] || {});
-        const staticSubsList = Object.keys(staticSubs).map((s) => ({ id: s, name: s }));
+        const cityData = getLocalCityData(tempProvince?.name || "", tempCity.name) || {};
+        const staticSubsList = Object.keys(cityData).map((s) => ({ id: s, name: s }));
         setSubdistrictsList(staticSubsList);
       } finally {
         setIsLoadingData(false);
@@ -513,7 +399,11 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
     }
 
     // Attempt local database first
-    const staticCodes = localIndonesiaData[tempProvince?.name || ""]?.[tempCity?.name || ""]?.[tempSubdistrict.name];
+    const staticCodes = getLocalSubdistrictData(
+      tempProvince?.name || "",
+      tempCity?.name || "",
+      tempSubdistrict.name
+    );
     if (staticCodes && staticCodes.length > 0) {
       setPostalCodesList(staticCodes.map((c) => ({ id: c, name: c })));
       return;
@@ -559,6 +449,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
         if (data && !error) {
           setProfileName(data.full_name || user.name || "");
           setProfilePhone(data.phone || "");
+          setAvatarUrl(data.avatar_url || localStorage.getItem(`panenku_avatar_${user.id}`) || "");
         } else {
           setProfileName(user.name || "");
         }
@@ -574,41 +465,30 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
     setIsDropdownOpen(false);
     setActiveTab("provinsi");
     setTabSearchQuery("");
-    if (user?.id) {
-      const savedFields = localStorage.getItem(`panenku_address_fields_${user.id}`);
-      if (savedFields) {
-        try {
-          const parsed = JSON.parse(savedFields);
-          setAddressRecipientName(parsed.recipientName || user.name || "");
-          setAddressRecipientPhone(parsed.recipientPhone || "");
-          setTempProvince(parsed.province ? { id: parsed.province.id, name: parsed.province.name } : null);
-          setTempCity(parsed.city ? { id: parsed.city.id, name: parsed.city.name } : null);
-          setTempSubdistrict(parsed.subdistrict ? { id: parsed.subdistrict.id, name: parsed.subdistrict.name } : null);
-          setTempPostalCode(parsed.postalCode || "");
-          setAddressStreet(parsed.street || "");
-          setAddressDetails(parsed.details || "");
-          return;
-        } catch (e) {
-          console.error(e);
-        }
-      }
 
-      // Query DB profiles fallback
+    // Clear form inputs
+    setAddressRecipientName("");
+    setAddressRecipientPhone("");
+    setTempProvince(null);
+    setTempCity(null);
+    setTempSubdistrict(null);
+    setTempPostalCode("");
+    setAddressStreet("");
+    setAddressDetails("");
+    setMakeDefault(true);
+
+    if (user?.id) {
       try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .maybeSingle();
-        if (data && !error) {
-          setAddressRecipientName(data.full_name || user.name || "");
-          setAddressRecipientPhone(data.phone || "");
-          setAddressStreet(data.address || "");
+        const data = await fetchShippingAddresses(user.id);
+        setSavedAddresses(data);
+        if (data.length > 0) {
+          setShowNewAddressForm(false);
         } else {
-          setAddressRecipientName(user.name || "");
+          setShowNewAddressForm(true);
         }
       } catch (err) {
         console.error(err);
+        setShowNewAddressForm(true);
       }
     }
   };
@@ -635,6 +515,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
         .update({
           full_name: profileName,
           phone: profilePhone,
+          avatar_url: avatarUrl
         })
         .eq("id", user.id);
 
@@ -674,8 +555,8 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
       setShowProfileModal(false);
 
       setTimeout(() => {
-        window.location.reload();
-      }, 500);
+        router.invalidate();
+      }, 300);
     } catch (err: any) {
       toast.error(err.message || "Gagal memperbarui profil.");
     } finally {
@@ -692,39 +573,100 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
     }
     setIsSavingAddress(true);
     try {
-      const compiledAddress = `${addressStreet}, ${addressDetails}, Kec. ${tempSubdistrict.name}, Kota ${tempCity.name}, Prov. ${tempProvince.name}, ${tempPostalCode} (Penerima: ${addressRecipientName}, Telp: ${addressRecipientPhone})`;
+      const isFirst = savedAddresses.length === 0;
+      const shouldBeDefault = makeDefault || isFirst;
 
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          address: compiledAddress,
-        })
-        .eq("id", user.id);
+      const newAddr = await insertShippingAddress(user.id, {
+        recipient_name: addressRecipientName,
+        recipient_phone: addressRecipientPhone,
+        province: tempProvince.name,
+        city: tempCity.name,
+        district: tempSubdistrict.name,
+        postal_code: tempPostalCode,
+        street_address: addressStreet,
+        details: addressDetails || null,
+        is_default: shouldBeDefault
+      });
 
-      if (error) throw error;
+      if (shouldBeDefault && newAddr) {
+        // Also update profiles.address with the compiled address for compatibility
+        const compiledAddress = `${addressStreet}, ${addressDetails ? addressDetails + ", " : ""}Kec. ${tempSubdistrict.name}, Kota ${tempCity.name}, Prov. ${tempProvince.name}, ${tempPostalCode} (Penerima: ${addressRecipientName}, Telp: ${addressRecipientPhone})`;
+        await supabase
+          .from("profiles")
+          .update({ address: compiledAddress })
+          .eq("id", user.id);
 
-      const fields = {
-        recipientName: addressRecipientName,
-        recipientPhone: addressRecipientPhone,
-        province: tempProvince,
-        city: tempCity,
-        subdistrict: tempSubdistrict,
-        postalCode: tempPostalCode,
-        street: addressStreet,
-        details: addressDetails,
-      };
-      localStorage.setItem(`panenku_address_fields_${user.id}`, JSON.stringify(fields));
+        const fields = {
+          recipientName: addressRecipientName,
+          recipientPhone: addressRecipientPhone,
+          province: tempProvince,
+          city: tempCity,
+          subdistrict: tempSubdistrict,
+          postalCode: tempPostalCode,
+          street: addressStreet,
+          details: addressDetails,
+        };
+        localStorage.setItem(`panenku_address_fields_${user.id}`, JSON.stringify(fields));
+      }
 
-      toast.success("Alamat pengiriman berhasil diperbarui!");
-      setShowAddressModal(false);
-
+      toast.success("Alamat pengiriman berhasil ditambahkan!");
+      
+      // Reload addresses
+      const list = await fetchShippingAddresses(user.id);
+      setSavedAddresses(list);
+      
+      // Hide form
+      setShowNewAddressForm(false);
+      
       setTimeout(() => {
-        window.location.reload();
-      }, 500);
+        router.invalidate();
+      }, 300);
     } catch (err: any) {
       toast.error(err.message || "Gagal menyimpan alamat.");
     } finally {
       setIsSavingAddress(false);
+    }
+  };
+
+  const handleSetDefaultAddress = async (addrId: string) => {
+    if (!user?.id) return;
+    try {
+      const updated = await setDefaultShippingAddress(user.id, addrId);
+
+      // Also update profiles.address with default address for compatibility
+      if (updated) {
+        const compiledAddress = `${updated.street_address}, ${updated.details ? updated.details + ", " : ""}Kec. ${updated.district}, Kota ${updated.city}, Prov. ${updated.province}, ${updated.postal_code} (Penerima: ${updated.recipient_name}, Telp: ${updated.recipient_phone})`;
+        await supabase
+          .from("profiles")
+          .update({ address: compiledAddress })
+          .eq("id", user.id);
+      }
+
+      toast.success("Alamat utama berhasil diubah!");
+
+      // Reload
+      const list = await fetchShippingAddresses(user.id);
+      setSavedAddresses(list);
+
+      setTimeout(() => {
+        router.invalidate();
+      }, 300);
+    } catch (err: any) {
+      toast.error(err.message || "Gagal mengatur alamat utama.");
+    }
+  };
+
+  const handleDeleteAddress = async (addrId: string) => {
+    if (!user?.id) return;
+    try {
+      await deleteShippingAddress(user.id, addrId);
+      toast.success("Alamat berhasil dihapus!");
+
+      // Reload
+      const list = await fetchShippingAddresses(user.id);
+      setSavedAddresses(list);
+    } catch (err: any) {
+      toast.error(err.message || "Gagal menghapus alamat.");
     }
   };
 
@@ -784,7 +726,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-45 w-full border-b border-border/30 bg-white/85 backdrop-blur-lg select-none">
         <div className="mx-auto max-w-full px-4 sm:px-8 md:px-12 py-3.5 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center">
-            <img src={logoRumohTani} alt="RumohTani" className="h-14 sm:h-16 object-contain" />
+            <img src={logoPanenku} alt="PANENKU" className="h-10 sm:h-12 object-contain" />
           </Link>
 
           <nav className="hidden lg:flex items-center gap-1.5">
@@ -880,9 +822,19 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
             )}
           </div>
 
-          <button onClick={() => setOpen(!open)} className="lg:hidden grid h-10 w-10 place-items-center rounded-full hover:bg-muted">
-            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
+          <div className="flex items-center gap-2 lg:hidden">
+            <Link
+              to="/cart"
+              className={`relative grid h-10 w-10 place-items-center rounded-full border border-border/40 hover:bg-secondary/40 transition shadow-sm ${path === "/cart" ? "bg-primary/10 text-primary border-primary/20" : "bg-white text-muted-foreground hover:text-foreground"
+                }`}
+            >
+              <ShoppingCart className="h-4 w-4" />
+            </Link>
+
+            <button onClick={() => setOpen(!open)} className="grid h-10 w-10 place-items-center rounded-full hover:bg-muted">
+              {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
 
         {open && (
@@ -896,10 +848,6 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
                 </Link>
               );
             })}
-            <Link to="/cart" onClick={() => setOpen(false)} className="rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-muted flex items-center gap-2 text-foreground/80">
-              <ShoppingCart className="h-4 w-4 shrink-0" />
-              <span>Keranjang</span>
-            </Link>
             {isLoggedIn && user ? (
               <>
                 <button
@@ -1039,162 +987,297 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
       {showAddressModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-[2.5rem] w-full max-w-xl p-6 sm:p-8 space-y-6 shadow-2xl relative animate-in zoom-in duration-300 text-left border border-border/30 overflow-y-auto max-h-[90vh]">
-            <div className="space-y-1">
-              <h3 className="font-['Plus_Jakarta_Sans',sans-serif] text-xl font-black text-foreground">Alamat Pengiriman</h3>
+
+            {/* Header */}
+            <div className="flex items-center justify-between font-display font-bold text-lg mb-2">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-primary" />
+                <h3 className="font-['Plus_Jakarta_Sans',sans-serif] text-xl font-black text-foreground">Alamat Pengiriman</h3>
+              </div>
+              {savedAddresses.length > 0 && !showNewAddressForm && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowNewAddressForm(true);
+                    setAddressRecipientName("");
+                    setAddressRecipientPhone("");
+                    setTempProvince(null);
+                    setTempCity(null);
+                    setTempSubdistrict(null);
+                    setTempPostalCode("");
+                    setAddressStreet("");
+                    setAddressDetails("");
+                    setMakeDefault(true);
+                  }}
+                  className="rounded-full gap-1.5 text-xs font-bold border-primary text-primary hover:bg-primary/5"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Tambah Baru
+                </Button>
+              )}
             </div>
 
-            <form onSubmit={handleSaveAddress} className="space-y-4 font-sans">
-              <div className="space-y-1.5">
-                <Label htmlFor="addr-name" className="text-xs font-bold text-muted-foreground uppercase">Nama Lengkap Penerima</Label>
-                <Input
-                  id="addr-name"
-                  value={addressRecipientName}
-                  onChange={(e) => setAddressRecipientName(e.target.value)}
-                  placeholder="Nama penerima paket"
-                  className="rounded-xl border-border/50 text-xs h-10"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="addr-phone" className="text-xs font-bold text-muted-foreground uppercase">Nomor HP / WhatsApp Penerima</Label>
-                <Input
-                  id="addr-phone"
-                  value={addressRecipientPhone}
-                  onChange={(e) => setAddressRecipientPhone(e.target.value)}
-                  placeholder="Contoh: 08123456789"
-                  className="rounded-xl border-border/50 text-xs h-10"
-                  required
-                />
-              </div>
-
-              {/* STEP-BY-STEP INTEGRATED WIDGET */}
-              <div className="space-y-1.5 region-selector-container relative">
-                <Label className="text-xs font-bold text-muted-foreground uppercase">Provinsi, Kota, Kecamatan, Kode Pos</Label>
-                <div
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="w-full h-10 rounded-xl border border-border/50 bg-white px-3 flex items-center justify-between cursor-pointer focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200 text-left"
-                >
-                  <span className={`text-xs truncate ${displayRegionLabel ? "text-foreground font-medium" : "text-muted-foreground font-light"}`}>
-                    {displayRegionLabel || "Provinsi, Kota, Kecamatan, Kode Pos"}
-                  </span>
-                  <div className="flex items-center gap-1 text-muted-foreground shrink-0 ml-2">
-                    <Search className="h-3.5 w-3.5" />
-                    <ChevronDown className="h-3.5 w-3.5" />
-                  </div>
+            {/* View 1: List of saved addresses */}
+            {savedAddresses.length > 0 && !showNewAddressForm ? (
+              <div className="space-y-4 font-sans">
+                <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                  {savedAddresses.map((addrObj) => {
+                    const isDefault = addrObj.is_default;
+                    return (
+                      <div
+                        key={addrObj.id}
+                        className={`p-4 sm:p-5 rounded-2xl border text-left transition-all duration-300 relative flex flex-col gap-3 group/card ${
+                          isDefault
+                            ? "border-primary bg-primary/5/10 ring-1 ring-primary/20 shadow-sm"
+                            : "border-border/60 hover:border-primary/40 hover:bg-slate-50/50 shadow-soft-sm"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-2.5">
+                            <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                              isDefault ? "bg-primary/10 text-primary" : "bg-slate-100 text-slate-400"
+                            }`}>
+                              <MapPin className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0 space-y-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-extrabold text-sm text-foreground">{addrObj.recipient_name}</span>
+                                {addrObj.recipient_phone && (
+                                  <span className="text-xs text-muted-foreground/80 font-medium">({addrObj.recipient_phone})</span>
+                                )}
+                                {isDefault && (
+                                  <span className="text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200/50 px-2 py-0.5 rounded-md">Utama</span>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground/90 font-normal leading-relaxed">
+                                {addrObj.street_address}{addrObj.details ? `, ${addrObj.details}` : ""}
+                              </p>
+                              {(addrObj.district || addrObj.city || addrObj.province) && (
+                                <p className="text-[11px] text-muted-foreground/75 font-light">
+                                  {[
+                                    addrObj.district ? `Kec. ${addrObj.district}` : "",
+                                    addrObj.city ? `Kota ${addrObj.city}` : "",
+                                    addrObj.province ? `Prov. ${addrObj.province}` : "",
+                                    addrObj.postal_code || ""
+                                  ].filter(Boolean).join(", ")}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteAddress(addrObj.id)}
+                            className="h-7 w-7 rounded-full bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 transition flex items-center justify-center shrink-0 self-start"
+                            title="Hapus Alamat"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                        
+                        {!isDefault && (
+                          <div className="pt-1.5 flex justify-end">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleSetDefaultAddress(addrObj.id)}
+                              className="rounded-full text-[10px] font-bold h-7 px-3.5 border-border hover:bg-secondary/60 hover:text-primary transition-all duration-200"
+                            >
+                              Jadikan Utama
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
 
-                {isDropdownOpen && (
-                  <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-border/40 rounded-2xl shadow-xl p-3 z-50 text-left space-y-3 animate-in fade-in duration-200">
-                    {/* Search inside the dropdown panel */}
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
-                      <input
-                        type="text"
-                        placeholder={`Cari ${activeTab === "provinsi" ? "Provinsi" : activeTab === "kota" ? "Kota" : activeTab === "kecamatan" ? "Kecamatan" : "Kode Pos"}...`}
-                        value={tabSearchQuery}
-                        onChange={(e) => setTabSearchQuery(e.target.value)}
-                        className="w-full h-8 pl-8 pr-3 rounded-lg border border-border/50 bg-[#e9eae6]/10 text-xs focus:outline-none focus:ring-2 focus:ring-primary/10 transition"
-                      />
-                    </div>
+                <div className="pt-2 flex">
+                  <Button type="button" variant="outline" onClick={() => setShowAddressModal(false)} className="rounded-full flex-1 font-semibold hover:bg-slate-100 border-border/70 text-foreground/80">Tutup</Button>
+                </div>
+              </div>
+            ) : (
+              /* View 2: Form to add a new address */
+              <form onSubmit={handleSaveAddress} className="space-y-4 font-sans">
+                <div className="space-y-1.5">
+                  <Label htmlFor="addr-name" className="text-xs font-bold text-muted-foreground uppercase">Nama Lengkap Penerima</Label>
+                  <Input
+                    id="addr-name"
+                    value={addressRecipientName}
+                    onChange={(e) => setAddressRecipientName(e.target.value)}
+                    placeholder="Nama penerima paket"
+                    className="rounded-xl border-border/50 text-xs h-10"
+                    required
+                  />
+                </div>
 
-                    {/* Tabs row representing steps */}
-                    <div className="flex border-b border-border/20 text-xs select-none">
-                      {(["provinsi", "kota", "kecamatan", "kodepos"] as const).map((tab) => {
-                        const isActive = activeTab === tab;
-                        const isEnabled =
-                          tab === "provinsi" ||
-                          (tab === "kota" && tempProvince) ||
-                          (tab === "kecamatan" && tempCity) ||
-                          (tab === "kodepos" && tempSubdistrict);
+                <div className="space-y-1.5">
+                  <Label htmlFor="addr-phone" className="text-xs font-bold text-muted-foreground uppercase">Nomor HP / WhatsApp Penerima</Label>
+                  <Input
+                    id="addr-phone"
+                    value={addressRecipientPhone}
+                    onChange={(e) => setAddressRecipientPhone(e.target.value)}
+                    placeholder="Contoh: 08123456789"
+                    className="rounded-xl border-border/50 text-xs h-10"
+                    required
+                  />
+                </div>
 
-                        return (
-                          <button
-                            type="button"
-                            key={tab}
-                            disabled={!isEnabled}
-                            onClick={() => {
-                              setActiveTab(tab);
-                              setTabSearchQuery("");
-                            }}
-                            className={`flex-1 pb-1.5 font-bold text-center border-b-2 transition ${isActive
-                              ? "border-primary text-primary"
-                              : isEnabled
-                                ? "border-transparent text-foreground hover:text-primary"
-                                : "border-transparent text-muted-foreground/30 cursor-not-allowed"
-                              }`}
-                          >
-                            {tab === "provinsi" ? "Provinsi" : tab === "kota" ? "Kota" : tab === "kecamatan" ? "Kecamatan" : "Kode Pos"}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Step Options List */}
-                    <div className="max-h-[160px] overflow-y-auto space-y-0.5 pr-1 text-xs select-none">
-                      {isLoadingData ? (
-                        <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground">
-                          <Loader2 className="h-4.5 w-4.5 animate-spin text-primary" />
-                          <span>Memuat data wilayah...</span>
-                        </div>
-                      ) : filteredOptions.length === 0 ? (
-                        <div className="text-center py-6 text-muted-foreground font-light">
-                          Tidak ada hasil.
-                        </div>
-                      ) : (
-                        filteredOptions.map((opt) => (
-                          <button
-                            type="button"
-                            key={opt.id}
-                            onClick={() => handleSelectOption(opt)}
-                            className="w-full text-left px-2.5 py-2 rounded-lg hover:bg-secondary/60 text-foreground transition font-medium flex items-center justify-between"
-                          >
-                            <span>{opt.name}</span>
-                            {/* Checkmark indicator for matched selection */}
-                            {((activeTab === "provinsi" && tempProvince?.id === opt.id) ||
-                              (activeTab === "kota" && tempCity?.id === opt.id) ||
-                              (activeTab === "kecamatan" && tempSubdistrict?.id === opt.id) ||
-                              (activeTab === "kodepos" && tempPostalCode === opt.name)) && (
-                                <Check className="h-3 w-3 text-primary shrink-0" />
-                              )}
-                          </button>
-                        ))
-                      )}
+                {/* STEP-BY-STEP INTEGRATED WIDGET */}
+                <div className="space-y-1.5 region-selector-container relative">
+                  <Label className="text-xs font-bold text-muted-foreground uppercase">Provinsi, Kota, Kecamatan, Kode Pos</Label>
+                  <div
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="w-full h-10 rounded-xl border border-border/50 bg-white px-3 flex items-center justify-between cursor-pointer focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-200 text-left"
+                  >
+                    <span className={`text-xs truncate ${displayRegionLabel ? "text-foreground font-medium" : "text-muted-foreground font-light"}`}>
+                      {displayRegionLabel || "Provinsi, Kota, Kecamatan, Kode Pos"}
+                    </span>
+                    <div className="flex items-center gap-1 text-muted-foreground shrink-0 ml-2">
+                      <Search className="h-3.5 w-3.5" />
+                      <ChevronDown className="h-3.5 w-3.5" />
                     </div>
                   </div>
+
+                  {isDropdownOpen && (
+                    <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-border/40 rounded-2xl shadow-xl p-3 z-50 text-left space-y-3 animate-in fade-in duration-200">
+                      {/* Search inside the dropdown panel */}
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-muted-foreground" />
+                        <input
+                          type="text"
+                          placeholder={`Cari ${activeTab === "provinsi" ? "Provinsi" : activeTab === "kota" ? "Kota" : activeTab === "kecamatan" ? "Kecamatan" : "Kode Pos"}...`}
+                          value={tabSearchQuery}
+                          onChange={(e) => setTabSearchQuery(e.target.value)}
+                          className="w-full h-8 pl-8 pr-3 rounded-lg border border-border/50 bg-[#e9eae6]/10 text-xs focus:outline-none focus:ring-2 focus:ring-primary/10 transition"
+                        />
+                      </div>
+
+                      {/* Tabs row representing steps */}
+                      <div className="flex border-b border-border/20 text-xs select-none">
+                        {(["provinsi", "kota", "kecamatan", "kodepos"] as const).map((tab) => {
+                          const isActive = activeTab === tab;
+                          const isEnabled =
+                            tab === "provinsi" ||
+                            (tab === "kota" && tempProvince) ||
+                            (tab === "kecamatan" && tempCity) ||
+                            (tab === "kodepos" && tempSubdistrict);
+
+                          return (
+                            <button
+                              type="button"
+                              key={tab}
+                              disabled={!isEnabled}
+                              onClick={() => {
+                                setActiveTab(tab);
+                                setTabSearchQuery("");
+                              }}
+                              className={`flex-1 pb-1.5 font-bold text-center border-b-2 transition ${isActive
+                                ? "border-primary text-primary"
+                                : isEnabled
+                                  ? "border-transparent text-foreground hover:text-primary"
+                                  : "border-transparent text-muted-foreground/30 cursor-not-allowed"
+                                }`}
+                            >
+                              {tab === "provinsi" ? "Provinsi" : tab === "kota" ? "Kota" : tab === "kecamatan" ? "Kecamatan" : "Kode Pos"}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Step Options List */}
+                      <div className="max-h-[160px] overflow-y-auto space-y-0.5 pr-1 text-xs select-none">
+                        {isLoadingData ? (
+                          <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground">
+                            <Loader2 className="h-4.5 w-4.5 animate-spin text-primary" />
+                            <span>Memuat data wilayah...</span>
+                          </div>
+                        ) : filteredOptions.length === 0 ? (
+                          <div className="text-center py-6 text-muted-foreground font-light">
+                            Tidak ada hasil.
+                          </div>
+                        ) : (
+                          filteredOptions.map((opt) => (
+                            <button
+                              type="button"
+                              key={opt.id}
+                              onClick={() => handleSelectOption(opt)}
+                              className="w-full text-left px-2.5 py-2 rounded-lg hover:bg-secondary/60 text-foreground transition font-medium flex items-center justify-between"
+                            >
+                              <span>{opt.name}</span>
+                              {/* Checkmark indicator for matched selection */}
+                              {((activeTab === "provinsi" && tempProvince?.id === opt.id) ||
+                                (activeTab === "kota" && tempCity?.id === opt.id) ||
+                                (activeTab === "kecamatan" && tempSubdistrict?.id === opt.id) ||
+                                (activeTab === "kodepos" && tempPostalCode === opt.name)) && (
+                                  <Check className="h-3 w-3 text-primary shrink-0" />
+                                )}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="addr-street" className="text-xs font-bold text-muted-foreground uppercase">Nama Jalan & Nomor Rumah</Label>
+                  <Input
+                    id="addr-street"
+                    value={addressStreet}
+                    onChange={(e) => setAddressStreet(e.target.value)}
+                    placeholder="Contoh: Jl. Dipatiukur No. 4"
+                    className="rounded-xl border-border/50 text-xs h-10"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="addr-details" className="text-xs font-bold text-muted-foreground uppercase">Detail Lainnya (RT/RW, Komplek, dll.)</Label>
+                  <Input
+                    id="addr-details"
+                    value={addressDetails}
+                    onChange={(e) => setAddressDetails(e.target.value)}
+                    placeholder="Contoh: RT 03/RW 11, Komplek Permai, pagar hijau"
+                    className="rounded-xl border-border/50 text-xs h-10"
+                  />
+                </div>
+
+                {savedAddresses.length > 0 && (
+                  <div className="flex items-center gap-2 py-1">
+                    <input
+                      type="checkbox"
+                      id="make-default"
+                      checked={makeDefault}
+                      onChange={(e) => setMakeDefault(e.target.checked)}
+                      className="rounded border-border/50 text-primary focus:ring-primary/20 h-4 w-4"
+                    />
+                    <Label htmlFor="make-default" className="text-xs font-semibold text-muted-foreground cursor-pointer select-none">Jadikan Alamat Utama (Default)</Label>
+                  </div>
                 )}
-              </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="addr-street" className="text-xs font-bold text-muted-foreground uppercase">Nama Jalan & Nomor Rumah</Label>
-                <Input
-                  id="addr-street"
-                  value={addressStreet}
-                  onChange={(e) => setAddressStreet(e.target.value)}
-                  placeholder="Contoh: Jl. Dipatiukur No. 4"
-                  className="rounded-xl border-border/50 text-xs h-10"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="addr-details" className="text-xs font-bold text-muted-foreground uppercase">Detail Lainnya (RT/RW, Komplek, dll.)</Label>
-                <Input
-                  id="addr-details"
-                  value={addressDetails}
-                  onChange={(e) => setAddressDetails(e.target.value)}
-                  placeholder="Contoh: RT 03/RW 11, Komplek Permai, pagar hijau"
-                  className="rounded-xl border-border/50 text-xs h-10"
-                />
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => setShowAddressModal(false)} className="rounded-full flex-1 font-semibold">Batal</Button>
-                <Button type="submit" disabled={isSavingAddress} className="rounded-full flex-1 font-bold shadow-soft">
-                  {isSavingAddress ? "Menyimpan..." : "Simpan"}
-                </Button>
-              </div>
-            </form>
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      if (savedAddresses.length > 0) {
+                        setShowNewAddressForm(false);
+                      } else {
+                        setShowAddressModal(false);
+                      }
+                    }}
+                    className="rounded-full flex-1 font-semibold"
+                  >
+                    Batal
+                  </Button>
+                  <Button type="submit" disabled={isSavingAddress} className="rounded-full flex-1 font-bold shadow-soft bg-primary hover:bg-primary-hover text-white">
+                    {isSavingAddress ? "Menyimpan..." : "Simpan"}
+                  </Button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

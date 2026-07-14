@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { products, type Product } from "@/lib/mock-data";
+import { type Product } from "@/lib/mock-data";
 
 export function mapDbProductToMock(db: any): Product {
   return {
@@ -20,54 +20,11 @@ export function mapDbProductToMock(db: any): Product {
     reviews: Number(db.reviews),
     image: db.image,
     description: db.description,
+    paymentMethods: db.payment_methods ? db.payment_methods.split(",") : ["ewallet", "va", "card"],
   };
 }
 
 export async function fetchProductsFromSupabase(includeArchived: boolean = false): Promise<Product[]> {
-  // Migrate any leftover localStorage products into the database (one-time)
-  try {
-    const raw = localStorage.getItem("panenku_custom_products");
-    if (raw) {
-      const localList: any[] = JSON.parse(raw);
-      if (localList.length > 0) {
-        for (const p of localList) {
-          const dbFormat = {
-            id: p.id,
-            name: p.name,
-            category: p.category,
-            type: p.type,
-            farmer: p.farmer,
-            farmer_id: p.farmerId || p.farmer_id || null,
-            location: p.location,
-            price: p.price,
-            unit: p.unit,
-            stock: p.stock,
-            ordered: p.ordered || 0,
-            estimated_harvest: p.estimatedHarvest || p.estimated_harvest || null,
-            cultivation: p.cultivation || null,
-            rating: p.rating || 5.0,
-            reviews: p.reviews || 0,
-            image: p.image,
-            description: p.description,
-          };
-          // Upsert: insert if not exists, ignore duplicates
-          await supabase.from("products").upsert([dbFormat], { onConflict: "id", ignoreDuplicates: true });
-        }
-        // Clear localStorage after successful migration
-        localStorage.removeItem("panenku_custom_products");
-        console.log("Migrated", localList.length, "localStorage products to Supabase and cleared local cache.");
-      }
-    }
-  } catch (e) {
-    console.warn("localStorage product migration attempt:", e);
-  }
-
-  // Perform quick database cleanup of any mock products (null farmer_id)
-  try {
-    await supabase.from("products").delete().is("farmer_id", null);
-  } catch (e) { /* ignore */ }
-
-  // Fetch ALL products from Supabase database (single source of truth)
   try {
     const { data, error } = await supabase
       .from("products")
@@ -84,7 +41,6 @@ export async function fetchProductsFromSupabase(includeArchived: boolean = false
     const dbProducts = data.map(mapDbProductToMock);
 
     if (!includeArchived) {
-      // Filter out archived products (stock === 0 as archive indicator)
       return dbProducts.filter((p: Product) => p.stock > 0);
     }
 
@@ -95,34 +51,6 @@ export async function fetchProductsFromSupabase(includeArchived: boolean = false
   }
 }
 
-async function seedMockProducts() {
-  try {
-    const dbFormat = products.map((p) => ({
-      id: p.id,
-      name: p.name,
-      category: p.category,
-      type: p.type,
-      farmer: p.farmer,
-      farmer_id: null,
-      location: p.location,
-      price: p.price,
-      unit: p.unit,
-      stock: p.stock,
-      ordered: p.ordered || 0,
-      estimated_harvest: p.estimatedHarvest || null,
-      cultivation: p.cultivation || null,
-      rating: p.rating,
-      reviews: p.reviews,
-      image: p.image,
-      description: p.description,
-    }));
-
-    const { error } = await supabase.from("products").insert(dbFormat);
-    if (error) console.error("Error seeding products to Supabase:", error);
-  } catch (err) {
-    console.error("seedMockProducts exception:", err);
-  }
-}
 
 export async function fetchProductDetail(id: string): Promise<{ product: Product; farmerProfile?: any }> {
   try {
@@ -174,9 +102,17 @@ export async function saveProductToSupabase(productData: {
   image: string;
   estimated_harvest?: string | null;
   cultivation?: string | null;
+  payment_methods?: string;
 }): Promise<void> {
   const { error } = await supabase.from("products").insert([productData]);
   if (error) {
+    if (error.code === "P0012" || error.message.includes("column \"payment_methods\" of relation \"products\" does not exist")) {
+      console.warn("Table does not have 'payment_methods' column. Retrying without it...");
+      const { payment_methods, ...rest } = productData;
+      const { error: retryError } = await supabase.from("products").insert([rest]);
+      if (!retryError) return;
+      throw retryError;
+    }
     console.error("Supabase products insert error:", error);
     throw new Error("Gagal menyimpan produk ke database: " + error.message);
   }
@@ -256,25 +192,11 @@ export async function fetchCustomerOrders(userId: string): Promise<any[]> {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.warn("Orders table does not exist or connection failed. Returning empty orders.", error);
+      console.warn("Orders table query error:", error);
       return [];
     }
 
-    if (data && data.length > 0) {
-      return data;
-    }
-
-    // Seed mock orders for new user history
-    console.log("No orders in Supabase. Auto-seeding mock orders for current user...");
-    await seedMockOrders(userId);
-
-    const { data: seeded } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false });
-
-    return seeded || [];
+    return data || [];
   } catch (err) {
     console.error("fetchCustomerOrders error:", err);
     return [];
@@ -290,25 +212,11 @@ export async function fetchFarmerOrders(farmerId: string): Promise<any[]> {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.warn("Orders table does not exist or connection failed. Returning empty orders.", error);
+      console.warn("Orders table query error:", error);
       return [];
     }
 
-    if (data && data.length > 0) {
-      return data;
-    }
-
-    // Seed mock orders for farmer dashboard view
-    console.log("No orders in Supabase. Auto-seeding mock orders for farmer ID...");
-    await seedMockOrders(farmerId, true);
-
-    const { data: seeded } = await supabase
-      .from("orders")
-      .select("*")
-      .eq("farmer_id", farmerId)
-      .order("created_at", { ascending: false });
-
-    return seeded || [];
+    return data || [];
   } catch (err) {
     console.error("fetchFarmerOrders error:", err);
     return [];
@@ -355,124 +263,104 @@ export async function fetchOrderDetail(orderId: string): Promise<any | null> {
   }
 }
 
-async function seedMockOrders(userId: string, isFarmer: boolean = false) {
-  try {
-    const mockDbOrders = [
-      {
-        id: "ORD-2401",
-        user_id: isFarmer ? "00000000-0000-0000-0000-000000000000" : userId,
-        product_id: "p1",
-        product_name: "Beras Pandan Wangi",
-        qty: "10 kg",
-        total: 145000,
-        status: "Sedang Panen",
-        date: "12 Jun 2026",
-        farmer_id: isFarmer ? userId : "00000000-0000-0000-0000-000000000000",
-        shipping_address: "Cianjur, Jawa Barat",
-        buyer_name: "Andi Pratama",
-        buyer_phone: "08123456789"
-      },
-      {
-        id: "ORD-2398",
-        user_id: isFarmer ? "00000000-0000-0000-0000-000000000000" : userId,
-        product_id: "p3",
-        product_name: "Tomat Cherry Segar",
-        qty: "3 kg",
-        total: 66000,
-        status: "Selesai",
-        date: "08 Jun 2026",
-        farmer_id: isFarmer ? userId : "00000000-0000-0000-0000-000000000000",
-        shipping_address: "Lembang, Bandung",
-        buyer_name: "Andi Pratama",
-        buyer_phone: "08123456789"
-      },
-      {
-        id: "ORD-2389",
-        user_id: isFarmer ? "00000000-0000-0000-0000-000000000000" : userId,
-        product_id: "p2",
-        product_name: "Kopi Arabika Gayo",
-        qty: "2 kg",
-        total: 190000,
-        status: "Pengiriman",
-        date: "05 Jun 2026",
-        farmer_id: isFarmer ? userId : "00000000-0000-0000-0000-000000000000",
-        shipping_address: "Aceh Tengah",
-        buyer_name: "Andi Pratama",
-        buyer_phone: "08123456789"
-      },
-      {
-        id: "ORD-2375",
-        user_id: isFarmer ? "00000000-0000-0000-0000-000000000000" : userId,
-        product_id: "w1",
-        product_name: "Sekam Padi",
-        qty: "50 kg",
-        total: 75000,
-        status: "Diproses",
-        date: "02 Jun 2026",
-        farmer_id: isFarmer ? userId : "00000000-0000-0000-0000-000000000000",
-        shipping_address: "Cianjur",
-        buyer_name: "Andi Pratama",
-        buyer_phone: "08123456789"
-      }
-    ];
-
-    await supabase.from("orders").insert(mockDbOrders);
-  } catch (err) {
-    console.error("seedMockOrders exception:", err);
-  }
-}
-
-// Query active farmers who have posted products in Supabase
+// Query active farmers who have the role 'petani' in Supabase
 export async function fetchRegisteredFarmers(): Promise<any[]> {
   try {
-    const { data: dbProducts, error: pError } = await supabase
-      .from("products")
-      .select("farmer_id, farmer, location, image");
-    
-    if (pError) throw pError;
-    
-    const uniqueFarmersMap = new Map<string, any>();
-    
-    dbProducts?.forEach((p: any) => {
-      const name = p.farmer || "Petani Mitra";
-      const id = p.farmer_id || name; // Use farmer name as ID if no farmer_id is set (for seeded products)
-      
-      if (!uniqueFarmersMap.has(id)) {
-        uniqueFarmersMap.set(id, {
-          id: id,
-          name: name,
-          location: p.location || "Indonesia",
-          image: p.image || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
-          commodity: "Sayuran",
-          commodities: ["Sayuran"]
-        });
-      }
-    });
-    
-    const farmersList = Array.from(uniqueFarmersMap.values());
-    
-    // Resolve registered profiles details
-    const resolvedFarmers = await Promise.all(
-      farmersList.map(async (f) => {
-        if (f.id && f.id.length > 20 && f.id !== f.name) { // Valid UUID checks
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", f.id)
-            .maybeSingle();
-          if (profile) {
-            return {
-              ...f,
-              name: profile.full_name || f.name,
-              location: profile.address || f.location
-            };
-          }
+    // 1. Fetch user ids that have role 'petani'
+    const { data: roleData, error: rError } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "petani");
+
+    if (rError) {
+      console.warn("Error querying user roles for petani:", rError);
+      return [];
+    }
+
+    if (!roleData || roleData.length === 0) {
+      return [];
+    }
+
+    const userIds = roleData.map(r => r.user_id);
+
+    // 2. Fetch profiles for these users
+    const { data: profiles, error: pError } = await supabase
+      .from("profiles")
+      .select("*")
+      .in("id", userIds);
+
+    if (pError) {
+      console.warn("Error querying profiles for userIds:", pError);
+      return [];
+    }
+
+    if (!profiles) return [];
+
+    // 3. Map profiles directly into mentor objects without mock dummy data
+    return profiles.map((p: any) => {
+      // Parse the address if it is JSON, otherwise keep defaults
+      let parsedAddressText = p.address || "Indonesia";
+      let price = 75000;
+      let specialty = p.focus_area || "Spesialis Budidaya Padi & Pangan";
+      let experience = p.experience || "15 tahun";
+      let satisfaction = "99%";
+      let isOpen = true;
+      let payments = ["BCA", "Mandiri", "DANA"];
+      let bankDetails = {
+        name: "BCA",
+        number: "123-456-7890",
+        holder: p.full_name || "Petani Mentor"
+      };
+      let paymentDetails = {};
+
+      try {
+        if (p.address && p.address.trim().startsWith("{")) {
+          const parsed = JSON.parse(p.address);
+          parsedAddressText = parsed.addressText || "Indonesia";
+          price = parsed.rate || price;
+          specialty = parsed.expertise || specialty;
+          experience = parsed.experienceYears ? `${parsed.experienceYears} tahun` : (p.experience || "15 tahun");
+          isOpen = parsed.isOpenForConsultation !== undefined ? parsed.isOpenForConsultation : isOpen;
+          payments = parsed.payments || payments;
+          bankDetails = parsed.bankDetails || bankDetails;
+          paymentDetails = parsed.paymentDetails || {};
+        } else if (p.bio && p.bio.trim().startsWith("{")) {
+          // Backup fallback to bio if bio exists
+          const parsed = JSON.parse(p.bio);
+          price = parsed.rate || price;
+          specialty = parsed.expertise || specialty;
+          experience = parsed.experienceYears ? `${parsed.experienceYears} tahun` : (p.experience || "15 tahun");
+          isOpen = parsed.isOpenForConsultation !== undefined ? parsed.isOpenForConsultation : isOpen;
+          payments = parsed.payments || payments;
+          bankDetails = parsed.bankDetails || bankDetails;
+          paymentDetails = parsed.paymentDetails || {};
         }
-        return f;
-      })
-    );
-    
-    return resolvedFarmers;
+      } catch (e) {
+        console.warn("Failed to parse bio/address JSON for farmer:", p.id, e);
+      }
+
+      // Format experience if numeric
+      if (/^\d+$/.test(experience)) {
+        experience = `${experience} tahun`;
+      }
+
+      return {
+        id: p.id,
+        name: p.full_name || "Petani Mentor",
+        location: parsedAddressText,
+        image: p.avatar_url || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
+        specialty,
+        experience,
+        satisfaction,
+        price,
+        isOpenForConsultation: isOpen,
+        payments,
+        bankDetails,
+        paymentDetails,
+        bioText: p.bio || parsedAddressText,
+        rawProfile: p
+      };
+    });
   } catch (err) {
     console.error("fetchRegisteredFarmers error:", err);
     return [];
@@ -506,8 +394,9 @@ export async function updateProductInSupabase(id: string, updatedFields: {
   unit: string;
   cultivation: string;
   description: string;
+  payment_methods?: string;
 }): Promise<void> {
-  const dbFormat = {
+  const dbFormat: any = {
     name: updatedFields.name,
     category: updatedFields.category.charAt(0).toUpperCase() + updatedFields.category.slice(1),
     price: updatedFields.price,
@@ -516,12 +405,25 @@ export async function updateProductInSupabase(id: string, updatedFields: {
     cultivation: updatedFields.cultivation,
     description: updatedFields.description,
   };
+  if (updatedFields.payment_methods !== undefined) {
+    dbFormat.payment_methods = updatedFields.payment_methods;
+  }
   const { error } = await supabase
     .from("products")
     .update(dbFormat)
     .eq("id", id);
     
   if (error) {
+    if (error.code === "P0012" || error.message.includes("column \"payment_methods\" of relation \"products\" does not exist")) {
+      console.warn("Table does not have 'payment_methods' column. Retrying update without it...");
+      const { payment_methods, ...rest } = dbFormat;
+      const { error: retryError } = await supabase
+        .from("products")
+        .update(rest)
+        .eq("id", id);
+      if (!retryError) return;
+      throw retryError;
+    }
     console.error("Supabase products update error:", error);
     throw new Error("Gagal memperbarui produk di database.");
   }

@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/cart")({
-  head: () => ({ meta: [{ title: "Keranjang — RumohTani" }] }),
+  head: () => ({ meta: [{ title: "Keranjang — PANENKU" }] }),
   component: Cart,
 });
 
@@ -121,7 +121,7 @@ function Cart() {
 
   return (
     <CustomerLayout>
-      <div className="mx-auto max-w-full px-4 sm:px-8 md:px-12 py-8">
+      <div className="mx-auto max-w-full px-4 sm:px-8 md:px-12 py-8 pb-80 lg:pb-8">
         <h1 className="font-display text-3xl font-bold mb-6">Keranjang Belanja</h1>
 
         {isLoading ? (
@@ -175,7 +175,7 @@ function Cart() {
             </div>
 
             {/* Order summary */}
-            <div className="glass-card rounded-2xl p-5 bg-white border border-border/30 shadow-sm h-fit space-y-4">
+            <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-border/80 p-5 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] rounded-t-[2rem] lg:relative lg:bottom-auto lg:left-auto lg:right-auto lg:z-0 lg:border lg:border-border/30 lg:rounded-2xl lg:shadow-sm h-fit space-y-4 lg:sticky lg:top-24">
               <h2 className="font-display font-bold text-lg border-b border-border/25 pb-3">Ringkasan Belanja</h2>
               <div className="space-y-2.5 text-sm">
                 <div className="flex justify-between">
@@ -201,7 +201,7 @@ function Cart() {
               {/* Checkout link button */}
               <div className="pt-2">
                 {list.length > 0 && (
-                  <Link to="/checkout/$id" params={{ id: list[0].id }} search={{ qty: list[0].qty }}>
+                  <Link to="/checkout/$id" params={{ id: "cart" }}>
                     <Button className="w-full rounded-full py-6 font-bold shadow-soft">Lanjut ke Checkout</Button>
                   </Link>
                 )}

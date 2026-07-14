@@ -221,7 +221,7 @@ function OrderDetail() {
                   {order.product_name?.charAt(0) || "P"}
                 </div>
                 <div className="min-w-0">
-                  <div className="font-semibold text-sm">RumohTani Hub</div>
+                  <div className="font-semibold text-sm">PANENKU Hub</div>
                   <div className="text-xs text-muted-foreground">Pembayaran terverifikasi penjual</div>
                 </div>
               </div>

@@ -1,19 +1,23 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { FarmerLayout } from "@/components/layout/FarmerLayout";
-import { useState } from "react";
+import bgDashboard from "@/assets/bg_dashboard.jpg";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
   MessageSquare, DollarSign, Calendar, Clock, Star,
-  ShieldCheck, HelpCircle, Check, X, Sparkles, User, Settings2
+  ShieldCheck, HelpCircle, Check, X, Sparkles, User, Settings2, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatRupiah } from "@/lib/mock-data";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { PAYMENT_METHODS } from "@/components/PaymentLogos";
 
 export const Route = createFileRoute("/farmer/consultations")({
-  head: () => ({ meta: [{ title: "Sesi Konsultasi & Mentorship — RumohTani" }] }),
+  head: () => ({ meta: [{ title: "Sesi Konsultasi & Mentorship — PANENKU" }] }),
   component: FarmerConsultationsPage,
 });
 
@@ -30,6 +34,8 @@ interface BookingRequest {
 }
 
 function FarmerConsultationsPage() {
+  const { user } = useAuth();
+
   // Consultation state
   const [isOpenForConsultation, setIsOpenForConsultation] = useState(true);
   const [hourlyRate, setHourlyRate] = useState(75000);
@@ -42,42 +48,174 @@ function FarmerConsultationsPage() {
   const [timeStart, setTimeStart] = useState("09:00");
   const [timeEnd, setTimeEnd] = useState("15:00");
 
-  // Mock incoming bookings
-  const [bookings, setBookings] = useState<BookingRequest[]>([
-    {
-      id: "CON-938",
-      studentName: "Andi Pratama",
-      topic: "Persiapan lahan lempung berpasir untuk jagung",
-      date: "02 Jul 2026",
-      time: "10:00",
-      duration: 2,
-      status: "pending",
-      price: 150000,
-      avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80"
-    },
-    {
-      id: "CON-482",
-      studentName: "Budi Santoso",
-      topic: "Formula pupuk kompos dari jerami fermentasi",
-      date: "04 Jul 2026",
-      time: "13:30",
-      duration: 1,
-      status: "pending",
-      price: 75000,
-      avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=100&q=80"
-    },
-    {
-      id: "CON-109",
-      studentName: "Rina Kartika",
-      topic: "Penanganan hama wereng secara alami",
-      date: "05 Jul 2026",
-      time: "09:00",
-      duration: 2,
-      status: "approved",
-      price: 150000,
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80"
+  // Payment options state
+  const [selectedPayments, setSelectedPayments] = useState<string[]>(["BCA", "Mandiri", "DANA"]);
+  const [bankAccountHolder, setBankAccountHolder] = useState("");
+  const [addressText, setAddressText] = useState("Sukabumi");
+  const [paymentDetails, setPaymentDetails] = useState<Record<string, { number: string; holder: string }>>({
+    BCA: { number: "", holder: "" },
+    BSI: { number: "", holder: "" },
+    BRI: { number: "", holder: "" },
+    Mandiri: { number: "", holder: "" },
+    DANA: { number: "", holder: "" },
+    OVO: { number: "", holder: "" },
+    ShopeePay: { number: "", holder: "" }
+  });
+
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const navigate = useNavigate();
+
+  // Booking verification states
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [isLoadingBookings, setIsLoadingBookings] = useState(true);
+
+  // Fetch real booking requests from Supabase
+  const fetchRealBookings = async () => {
+    if (!user) return;
+    setIsLoadingBookings(true);
+    try {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("farmer_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        const mapped = data
+          .filter(o => o.product_name && o.product_name.startsWith("Konsultasi: "))
+          .map(o => {
+            let topicText = "Materi Konsultasi";
+            let payMethodText = "BCA";
+
+            if (o.shipping_address) {
+              const methodMatch = o.shipping_address.match(/\[Metode:\s*([^\]]+)\]/);
+              if (methodMatch) payMethodText = methodMatch[1];
+              
+              if (o.shipping_address.includes(" - ")) {
+                topicText = o.shipping_address.split(" - ")[1] || topicText;
+              } else {
+                topicText = o.shipping_address;
+              }
+            }
+
+            return {
+              id: o.id,
+              studentId: o.user_id,
+              studentName: o.buyer_name || "Calon Petani",
+              topic: topicText,
+              paymentMethod: payMethodText,
+              date: o.date ? o.date.split(" ")[0] : new Date(o.created_at).toLocaleDateString("id-ID"),
+              time: o.date && o.date.split(" ")[1] ? o.date.split(" ")[1] : "10:00",
+              duration: 1,
+              status: o.status === "Paid" ? "approved" : o.status === "Rejected" ? "rejected" : "pending",
+              price: o.total,
+              avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80"
+            };
+          });
+        setBookings(mapped);
+      }
+    } catch (err) {
+      console.error("Error fetching bookings:", err);
+    } finally {
+      setIsLoadingBookings(false);
     }
-  ]);
+  };
+
+  useEffect(() => {
+    fetchRealBookings();
+  }, [user]);
+
+  // Load profile settings from Supabase
+  useEffect(() => {
+    const fetchProfileSettings = async () => {
+      if (!user) return;
+      setIsLoadingProfile(true);
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("address, full_name, bio")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (!error && data) {
+          setBankAccountHolder(data.full_name || "");
+          
+          let parsedBio = data.bio || "";
+          
+          if (data.address && data.address.trim().startsWith("{")) {
+            try {
+              const parsed = JSON.parse(data.address);
+              setAddressText(parsed.addressText || "");
+              setBio(parsed.bioText || data.bio || "");
+              setHourlyRate(parsed.rate || 75000);
+              setIsOpenForConsultation(parsed.isOpenForConsultation !== undefined ? parsed.isOpenForConsultation : true);
+              setSelectedDays(parsed.selectedDays || ["Senin", "Rabu", "Jumat"]);
+              setTimeStart(parsed.timeStart || "09:00");
+              setTimeEnd(parsed.timeEnd || "15:00");
+              setExpertise(parsed.expertise || "Budidaya Padi Organik");
+              if (parsed.experienceYears) setExperienceYears(parsed.experienceYears);
+              setSelectedPayments(parsed.payments || ["BCA", "Mandiri", "DANA"]);
+              
+              if (parsed.paymentDetails) {
+                setPaymentDetails({
+                  BCA: parsed.paymentDetails.BCA || { number: "", holder: data.full_name || "" },
+                  BSI: parsed.paymentDetails.BSI || { number: "", holder: data.full_name || "" },
+                  BRI: parsed.paymentDetails.BRI || { number: "", holder: data.full_name || "" },
+                  Mandiri: parsed.paymentDetails.Mandiri || { number: "", holder: data.full_name || "" },
+                  DANA: parsed.paymentDetails.DANA || { number: "", holder: data.full_name || "" },
+                  OVO: parsed.paymentDetails.OVO || { number: "", holder: data.full_name || "" },
+                  ShopeePay: parsed.paymentDetails.ShopeePay || { number: "", holder: data.full_name || "" }
+                });
+              }
+            } catch (e) {
+              setAddressText(data.address);
+              setBio(data.bio || "");
+            }
+          } else {
+            setAddressText(data.address || "Sukabumi");
+            setBio(data.bio || "");
+
+            // Fallback load from bio column if it was saved there previously
+            if (data.bio && data.bio.trim().startsWith("{")) {
+              try {
+                const parsed = JSON.parse(data.bio);
+                setHourlyRate(parsed.rate || 75000);
+                setIsOpenForConsultation(parsed.isOpenForConsultation !== undefined ? parsed.isOpenForConsultation : true);
+                setSelectedDays(parsed.selectedDays || ["Senin", "Rabu", "Jumat"]);
+                setTimeStart(parsed.timeStart || "09:00");
+                setTimeEnd(parsed.timeEnd || "15:00");
+                setExpertise(parsed.expertise || "Budidaya Padi Organik");
+                if (parsed.experienceYears) setExperienceYears(parsed.experienceYears);
+                setSelectedPayments(parsed.payments || ["BCA", "Mandiri", "DANA"]);
+                
+                if (parsed.paymentDetails) {
+                  setPaymentDetails({
+                    BCA: parsed.paymentDetails.BCA || { number: "", holder: data.full_name || "" },
+                    BSI: parsed.paymentDetails.BSI || { number: "", holder: data.full_name || "" },
+                    BRI: parsed.paymentDetails.BRI || { number: "", holder: data.full_name || "" },
+                    Mandiri: parsed.paymentDetails.Mandiri || { number: "", holder: data.full_name || "" },
+                    DANA: parsed.paymentDetails.DANA || { number: "", holder: data.full_name || "" },
+                    OVO: parsed.paymentDetails.OVO || { number: "", holder: data.full_name || "" },
+                    ShopeePay: parsed.paymentDetails.ShopeePay || { number: "", holder: data.full_name || "" }
+                  });
+                }
+              } catch (e) {
+                console.warn(e);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error loading profile settings:", err);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    fetchProfileSettings();
+  }, [user]);
 
   const toggleDay = (day: string) => {
     if (selectedDays.includes(day)) {
@@ -87,16 +225,68 @@ function FarmerConsultationsPage() {
     }
   };
 
-  const handleBookingAction = (id: string, action: "approve" | "reject") => {
-    setBookings(prev => 
-      prev.map(b => b.id === id ? { ...b, status: action === "approve" ? "approved" : "rejected" } : b)
-    );
-    toast.success(action === "approve" ? "Sesi konsultasi disetujui" : "Sesi konsultasi ditolak");
+  const handleBookingAction = async (id: string, action: "approve" | "reject") => {
+    const newStatus = action === "approve" ? "Paid" : "Rejected";
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({ status: newStatus })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast.success(action === "approve" 
+        ? "Pembayaran sesi berhasil diverifikasi & disetujui! Sesi chat sekarang aktif." 
+        : "Sesi konsultasi ditolak.");
+      
+      fetchRealBookings();
+    } catch (err: any) {
+      toast.error("Gagal mengubah status verifikasi: " + err.message);
+    }
   };
 
-  const handleSaveSettings = (e: React.FormEvent) => {
+  const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Pengaturan & Tarif Sesi Konsultasi Berhasil Disimpan!");
+    if (!user) {
+      toast.error("Silakan masuk terlebih dahulu");
+      return;
+    }
+
+    setIsSaving(true);
+    const settings = {
+      addressText: addressText,
+      rate: hourlyRate,
+      expertise,
+      experienceYears,
+      selectedDays,
+      timeStart,
+      timeEnd,
+      isOpenForConsultation,
+      payments: selectedPayments,
+      paymentDetails,
+      bankDetails: {
+        name: selectedPayments[0] || "BCA",
+        number: paymentDetails[selectedPayments[0] || "BCA"]?.number || "",
+        holder: paymentDetails[selectedPayments[0] || "BCA"]?.holder || bankAccountHolder
+      },
+      bioText: bio
+    };
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          address: JSON.stringify(settings)
+        })
+        .eq("id", user.id);
+
+      if (error) throw error;
+      toast.success("Pengaturan & Tarif Sesi Konsultasi Berhasil Disimpan!");
+    } catch (err: any) {
+      toast.error("Gagal menyimpan pengaturan: " + err.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -108,15 +298,21 @@ function FarmerConsultationsPage() {
         <div className="absolute bottom-[5%] right-[-10%] w-[35vw] h-[35vw] rounded-full bg-[#b4f05a]/5 blur-[100px] pointer-events-none" />
           
           {/* Header Banner */}
-          <div className="bg-white border border-border/40 rounded-[2rem] p-6 sm:p-8 flex flex-wrap items-center justify-between gap-4 shadow-sm">
-            <div>
-              <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Layanan Konsultasi</div>
-              <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-3xl font-extrabold text-foreground tracking-tight mt-1">
-                Kelola Mentorship & <span className="font-['Playfair_Display',serif] italic font-light text-primary">Sesi Tanya Jawab</span>
+          <div 
+            className="relative overflow-hidden border border-emerald-800 rounded-[1.5rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-lg text-white"
+            style={{ 
+              backgroundImage: `linear-gradient(to right, rgba(6, 78, 59, 0.95), rgba(6, 78, 59, 0.45)), url(${bgDashboard})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center"
+            }}
+          >
+            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: "radial-gradient(white 1px, transparent 1px)", backgroundSize: "16px 16px" }} />
+            <div className="relative z-10">
+              <div className="text-xs font-bold text-[#b4f05a] uppercase tracking-wider">Layanan Konsultasi</div>
+              <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">
+                Kelola Mentorship & <span className="font-['Playfair_Display',serif] italic font-light text-[#b4f05a]">Sesi Tanya Jawab</span>
               </h1>
-              <p className="text-sm text-muted-foreground font-light mt-1.5">Membantu calon petani pemula dengan menetapkan tarif sesi, mengatur jadwal mingguan, dan mengelola pendaftaran.</p>
             </div>
-            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-primary text-white shrink-0"><MessageSquare className="h-6 w-6" /></div>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-8">
@@ -215,6 +411,98 @@ function FarmerConsultationsPage() {
                           />
                         </div>
                       </div>
+                    </div>                    {/* Payment methods & Bank Details configuration */}
+                    <div className="space-y-4 border-t border-border/40 pt-4 text-left">
+                      <div>
+                        <Label className="font-bold text-sm text-foreground">Metode Pembayaran yang Diterima</Label>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Pilih metode pembayaran yang akan ditampilkan saat calon pembeli menyewa sesi Anda.</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {PAYMENT_METHODS.map((pm) => {
+                          const isSelected = selectedPayments.includes(pm.id);
+                          return (
+                            <button
+                              key={pm.id}
+                              type="button"
+                              onClick={() => {
+                                if (isSelected) {
+                                  setSelectedPayments(selectedPayments.filter(id => id !== pm.id));
+                                } else {
+                                  setSelectedPayments([...selectedPayments, pm.id]);
+                                }
+                              }}
+                              className={`flex items-center justify-center p-3.5 rounded-2xl border transition duration-200 ${
+                                isSelected
+                                  ? "border-primary bg-primary/5 shadow-soft"
+                                  : "border-border/60 hover:bg-secondary/40"
+                              }`}
+                            >
+                              {pm.logo}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Bank Details section */}
+                      {selectedPayments.length > 0 && (
+                        <div className="space-y-4 pt-2">
+                          <Label className="text-xs font-bold text-foreground uppercase tracking-wider block">✍️ Masukkan Rincian Rekening / E-Wallet Berbeda</Label>
+                          <div className="grid gap-4">
+                            {selectedPayments.map((pmId) => {
+                              const pm = PAYMENT_METHODS.find(p => p.id === pmId);
+                              if (!pm) return null;
+                              
+                              const currentVal = paymentDetails[pmId] || { number: "", holder: bankAccountHolder };
+
+                              return (
+                                <div key={pmId} className="bg-secondary/20 rounded-2xl p-4 sm:p-5 border border-border/40 space-y-4 text-left">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      {pm.logo}
+                                      <span className="text-xs font-bold text-foreground uppercase tracking-wider">{pm.name}</span>
+                                    </div>
+                                    <Badge className="bg-primary/10 text-primary border-transparent text-[8.5px] font-bold py-0.5 rounded px-2">
+                                      {pm.type === "bank" ? "Bank Transfer" : "E-Wallet"}
+                                    </Badge>
+                                  </div>
+                                  
+                                  <div className="grid sm:grid-cols-2 gap-4">
+                                    <div className="space-y-1.5 text-left">
+                                      <Label className="text-[10px] font-bold text-muted-foreground uppercase">
+                                        {pm.type === "bank" ? "Nomor Rekening Bank" : "Nomor HP Akun " + pm.name}
+                                      </Label>
+                                      <Input
+                                        value={currentVal.number}
+                                        onChange={(e) => setPaymentDetails({
+                                          ...paymentDetails,
+                                          [pmId]: { ...currentVal, number: e.target.value }
+                                        })}
+                                        className="rounded-xl h-10 text-xs bg-white"
+                                        placeholder={pm.type === "bank" ? "e.g. 123456789" : "e.g. 08123456789"}
+                                        required
+                                      />
+                                    </div>
+                                    <div className="space-y-1.5 text-left">
+                                      <Label className="text-[10px] font-bold text-muted-foreground uppercase">Nama Pemilik Akun / Rekening</Label>
+                                      <Input
+                                        value={currentVal.holder}
+                                        onChange={(e) => setPaymentDetails({
+                                          ...paymentDetails,
+                                          [pmId]: { ...currentVal, holder: e.target.value }
+                                        })}
+                                        className="rounded-xl h-10 text-xs bg-white"
+                                        placeholder="Nama lengkap sesuai akun"
+                                        required
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Experience Info fields */}
@@ -241,90 +529,122 @@ function FarmerConsultationsPage() {
                       </div>
                     </div>
 
-                    <Button type="submit" className="rounded-full px-8 shadow-soft">
-                      Simpan Jadwal & Tarif Sesi
+                    <Button type="submit" disabled={isSaving} className="rounded-full px-8 shadow-soft flex items-center gap-2">
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Menyimpan...</span>
+                        </>
+                      ) : (
+                        <span>Simpan Jadwal & Tarif Sesi</span>
+                      )}
                     </Button>
                   </div>
                 )}
               </form>
-
               {/* Consultation requests list */}
               <div className="bg-white border border-border/40 rounded-[2rem] p-6 sm:p-8 shadow-sm space-y-6">
                 <div>
-                  <h3 className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-lg text-foreground">Permintaan Sesi Masuk</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">Sesi konsultasi baru dari calon petani yang membutuhkan persetujuan.</p>
+                  <h3 className="font-['Plus_Jakarta_Sans',sans-serif] font-bold text-lg text-foreground">Verifikasi Pembayaran Masuk</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">Daftar bukti transfer/pembayaran masuk dari pembeli untuk verifikasi manual.</p>
                 </div>
 
                 <div className="space-y-4">
-                  {bookings.map((b) => (
-                    <div 
-                      key={b.id} 
-                      className={`border rounded-2xl p-5 sm:p-6 transition duration-300 ${
-                        b.status === "approved" 
-                          ? "border-emerald-100 bg-emerald-50/10" 
-                          : b.status === "rejected"
-                            ? "border-red-100 bg-red-50/10"
-                            : "border-border/40 hover:border-primary/20 hover:bg-secondary/10"
-                      }`}
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                          <img src={b.avatar} alt={b.studentName} className="h-12 w-12 rounded-xl object-cover border border-border/40 shadow-sm" />
-                          <div className="text-left">
-                            <div className="font-bold text-sm text-foreground">{b.studentName}</div>
-                            <div className="text-[10px] font-semibold text-primary uppercase tracking-wider">Calon Petani</div>
-                          </div>
-                        </div>
-                        <div className="text-left sm:text-right shrink-0">
-                          <div className="text-xs text-muted-foreground">{b.id}</div>
-                          <div className="font-bold text-primary text-sm mt-0.5">{formatRupiah(b.price)}</div>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 p-3 rounded-xl bg-secondary/30 border border-border/20 text-left">
-                        <div className="text-[10px] font-bold text-muted-foreground uppercase">Topik Bahasan</div>
-                        <div className="text-xs font-semibold text-foreground mt-0.5">{b.topic}</div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-4 mt-3 text-[11px] text-muted-foreground font-medium">
-                        <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5 text-primary" /> {b.date}</span>
-                        <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5 text-primary" /> {b.time} ({b.duration} Jam Sesi)</span>
-                      </div>
-
-                      {b.status === "pending" && (
-                        <div className="flex gap-2 mt-5 pt-3 border-t border-border/40">
-                          <Button 
-                            onClick={() => handleBookingAction(b.id, "approve")}
-                            size="sm" 
-                            className="rounded-full gap-1 text-[11px] px-4 font-bold"
-                          >
-                            <Check className="h-3.5 w-3.5" /> Setujui
-                          </Button>
-                          <Button 
-                            onClick={() => handleBookingAction(b.id, "reject")}
-                            size="sm" 
-                            variant="outline" 
-                            className="rounded-full gap-1 text-[11px] px-4 font-bold text-destructive border-destructive/20 hover:bg-destructive/10"
-                          >
-                            <X className="h-3.5 w-3.5" /> Tolak
-                          </Button>
-                        </div>
-                      )}
-
-                      {b.status === "approved" && (
-                        <div className="mt-4 pt-3 border-t border-emerald-100/50 flex items-center justify-between text-xs">
-                          <span className="text-emerald-700 font-bold flex items-center gap-1"><Check className="h-4 w-4" /> Sesi Disetujui</span>
-                          <Button variant="outline" size="sm" className="rounded-full text-[10px] font-bold">Kirim Link Ruang Chat</Button>
-                        </div>
-                      )}
-
-                      {b.status === "rejected" && (
-                        <div className="mt-4 pt-3 border-t border-red-100/50 text-xs text-left">
-                          <span className="text-red-700 font-bold flex items-center gap-1"><X className="h-4 w-4" /> Sesi Ditolak</span>
-                        </div>
-                      )}
+                  {isLoadingBookings ? (
+                    <div className="flex flex-col items-center justify-center py-10 gap-2 text-muted-foreground">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <span className="text-xs font-light">Memuat data permintaan...</span>
                     </div>
-                  ))}
+                  ) : bookings.length === 0 ? (
+                    <div className="text-xs text-muted-foreground text-center py-10 font-light">Belum ada permintaan verifikasi pembayaran masuk.</div>
+                  ) : (
+                    bookings.map((b) => {
+                      const pm = PAYMENT_METHODS.find(p => p.id === b.paymentMethod);
+                      return (
+                        <div 
+                          key={b.id} 
+                          className={`border rounded-2xl p-5 sm:p-6 transition duration-300 ${
+                            b.status === "approved" 
+                              ? "border-emerald-100 bg-emerald-50/10" 
+                              : b.status === "rejected"
+                                ? "border-red-100 bg-red-50/10"
+                                : "border-border/40 hover:border-primary/20 hover:bg-secondary/10"
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                              <img src={b.avatar} alt={b.studentName} className="h-12 w-12 rounded-xl object-cover border border-border/40 shadow-sm" />
+                              <div className="text-left">
+                                <div className="font-bold text-sm text-foreground">{b.studentName}</div>
+                                <div className="text-[10px] font-semibold text-primary uppercase tracking-wider">Calon Petani</div>
+                              </div>
+                            </div>
+                            <div className="text-left sm:text-right shrink-0">
+                              <div className="text-xs text-muted-foreground">{b.id}</div>
+                              <div className="font-bold text-primary text-sm mt-0.5">{formatRupiah(b.price)}</div>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 p-3 rounded-xl bg-secondary/30 border border-border/20 text-left space-y-2">
+                            <div>
+                              <div className="text-[10px] font-bold text-muted-foreground uppercase">Topik Bahasan</div>
+                              <div className="text-xs font-semibold text-foreground mt-0.5">{b.topic}</div>
+                            </div>
+                            <div className="flex items-center gap-2 pt-2 border-t border-border/10 text-xs">
+                              <span className="text-muted-foreground font-bold">Metode Bayar:</span>
+                              {pm ? pm.logo : <span className="font-bold text-primary">{b.paymentMethod}</span>}
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-4 mt-3 text-[11px] text-muted-foreground font-medium">
+                            <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5 text-primary" /> {b.date}</span>
+                            <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5 text-primary" /> {b.time} ({b.duration} Jam Sesi)</span>
+                          </div>
+
+                          {b.status === "pending" && (
+                            <div className="flex gap-2 mt-5 pt-3 border-t border-border/40">
+                              <Button 
+                                onClick={() => handleBookingAction(b.id, "approve")}
+                                size="sm" 
+                                className="rounded-full gap-1.5 text-[11px] px-4 font-bold"
+                              >
+                                <Check className="h-3.5 w-3.5" /> Verifikasi & Setujui
+                              </Button>
+                              <Button 
+                                onClick={() => handleBookingAction(b.id, "reject")}
+                                size="sm" 
+                                variant="outline" 
+                                className="rounded-full gap-1 text-[11px] px-4 font-bold text-destructive border-destructive/20 hover:bg-destructive/10"
+                              >
+                                <X className="h-3.5 w-3.5" /> Tolak
+                              </Button>
+                            </div>
+                          )}
+
+                          {b.status === "approved" && (
+                            <div className="mt-4 pt-3 border-t border-emerald-100/50 flex items-center justify-between text-xs">
+                              <span className="text-emerald-700 font-bold flex items-center gap-1"><Check className="h-4 w-4" /> Verifikasi Berhasil (Aktif)</span>
+                              <Button 
+                                onClick={() => navigate({ to: "/chat", search: { mentorId: b.studentId } })}
+                                variant="outline" 
+                                size="sm" 
+                                className="rounded-full text-[10px] font-bold border-primary text-primary hover:bg-primary/5 flex items-center gap-1"
+                              >
+                                <MessageSquare className="h-3.5 w-3.5" />
+                                <span>Buka Chat Sesi</span>
+                              </Button>
+                            </div>
+                          )}
+
+                          {b.status === "rejected" && (
+                            <div className="mt-4 pt-3 border-t border-red-100/50 text-xs text-left">
+                              <span className="text-red-700 font-bold flex items-center gap-1"><X className="h-4 w-4" /> Sesi Ditolak</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             </div>

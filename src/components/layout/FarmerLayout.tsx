@@ -4,7 +4,7 @@ import {
   Wallet, Recycle, UserCircle, ArrowLeft, Menu, X, MessageSquare, LogOut, RefreshCw
 } from "lucide-react";
 import { useState, useEffect, type ReactNode } from "react";
-import logoRumohTani from "@/assets/rumohtani_transparent.png";
+import logoPanenku from "@/assets/logo_panenku.png";
 import { RequireRole } from "@/components/RequireRole";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -34,6 +34,16 @@ function FarmerLayoutInner({ children, title }: { children: ReactNode; title: st
   const [open, setOpen] = useState(false);
   const { profile, user, signOut } = useAuth();
   const displayName = profile?.full_name || user?.email?.split("@")[0] || "Petani";
+  const [avatarUrl, setAvatarUrl] = useState("");
+
+  useEffect(() => {
+    if (user) {
+      const localAvatar = localStorage.getItem(`panenku_avatar_${user.id}`);
+      if (localAvatar) {
+        setAvatarUrl(localAvatar);
+      }
+    }
+  }, [user]);
 
   useEffect(() => {
     const resetScroll = () => {
@@ -67,29 +77,108 @@ function FarmerLayoutInner({ children, title }: { children: ReactNode; title: st
       >
         <div className="flex h-full flex-col">
           <Link to="/" className="flex items-center justify-center px-6 py-5 border-b border-border/40 w-full">
-            <img src={logoRumohTani} alt="RumohTani" className="h-14 object-contain" />
+            <img src={logoPanenku} alt="PANENKU" className="h-18 object-contain" />
           </Link>
 
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1.5">
-            {menu.map((m) => {
-              const active = m.exact ? path === m.to : path === m.to || path.startsWith(m.to + "/");
-              const Icon = m.icon;
-              return (
-                <Link
-                  key={m.to}
-                  to={m.to}
-                  onClick={() => setOpen(false)}
-                  className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs uppercase tracking-wider font-bold transition duration-200 ${active ? "bg-primary text-white shadow-soft" : "text-foreground/75 hover:bg-secondary hover:text-foreground"
-                    }`}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span>{m.label}</span>
-                </Link>
-              );
-            })}
+          <nav className="flex-1 overflow-y-auto p-4 space-y-6">
+            {/* Group 1: Utama */}
+            <div className="space-y-1">
+              <div className="px-4 text-[9px] font-black text-muted-foreground/50 uppercase tracking-[0.2em] mb-2 select-none">Utama</div>
+              {menu.slice(0, 3).map((m, idx) => {
+                const active = m.exact ? path === m.to : path === m.to || path.startsWith(m.to + "/");
+                const Icon = m.icon;
+                return (
+                  <div key={m.to}>
+                    <Link
+                      to={m.to}
+                      onClick={() => setOpen(false)}
+                      className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs uppercase tracking-wider font-bold transition duration-200 ${active ? "bg-primary text-white shadow-soft" : "text-foreground/75 hover:bg-secondary hover:text-foreground"
+                        }`}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span>{m.label}</span>
+                    </Link>
+                    {idx < 2 && <div className="h-px bg-gray-100/80 my-1 mx-2" />}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="border-t border-border/30 my-4" />
+
+            {/* Group 2: Penjualan & Layanan */}
+            <div className="space-y-1">
+              <div className="px-4 text-[9px] font-black text-muted-foreground/50 uppercase tracking-[0.2em] mb-2 select-none">Penjualan & Layanan</div>
+              {menu.slice(3, 7).map((m, idx) => {
+                const active = m.exact ? path === m.to : path === m.to || path.startsWith(m.to + "/");
+                const Icon = m.icon;
+                return (
+                  <div key={m.to}>
+                    <Link
+                      to={m.to}
+                      onClick={() => setOpen(false)}
+                      className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs uppercase tracking-wider font-bold transition duration-200 ${active ? "bg-primary text-white shadow-soft" : "text-foreground/75 hover:bg-secondary hover:text-foreground"
+                        }`}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span>{m.label}</span>
+                    </Link>
+                    {idx < 3 && <div className="h-px bg-gray-100/80 my-1 mx-2" />}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="border-t border-border/30 my-4" />
+
+            {/* Group 3: Budidaya */}
+            <div className="space-y-1">
+              <div className="px-4 text-[9px] font-black text-muted-foreground/50 uppercase tracking-[0.2em] mb-2 select-none">Budidaya</div>
+              {menu.slice(7).map((m) => {
+                const active = m.exact ? path === m.to : path === m.to || path.startsWith(m.to + "/");
+                const Icon = m.icon;
+                return (
+                  <Link
+                    key={m.to}
+                    to={m.to}
+                    onClick={() => setOpen(false)}
+                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs uppercase tracking-wider font-bold transition duration-200 ${active ? "bg-primary text-white shadow-soft" : "text-foreground/75 hover:bg-secondary hover:text-foreground"
+                      }`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span>{m.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
           </nav>
 
-
+          {/* Bottom Sidebar Profile Container */}
+          <div className="border-t border-border/40 p-4 bg-gray-50/50">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-secondary overflow-hidden shrink-0 border border-border/40 flex items-center justify-center text-foreground font-black text-sm shadow-sm">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" />
+                ) : (
+                  <span>{displayName.charAt(0).toUpperCase()}</span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-bold text-foreground truncate">{displayName}</div>
+                <div className="text-[9px] font-bold text-emerald-800 bg-emerald-500/10 px-1.5 py-0.5 rounded-full uppercase w-fit mt-0.5">Penjual (Seller)</div>
+              </div>
+              <button
+                onClick={() => {
+                  signOut();
+                  toast.success("Berhasil keluar dari akun.");
+                }}
+                title="Keluar dari akun"
+                className="grid h-8 w-8 place-items-center rounded-lg bg-white border border-border/40 text-destructive hover:bg-destructive/10 hover:border-destructive/20 transition-all duration-300 shadow-sm shrink-0"
+              >
+                <LogOut className="h-3.5 w-3.5 text-destructive" />
+              </button>
+            </div>
+          </div>
         </div>
       </aside>
 
@@ -103,23 +192,6 @@ function FarmerLayoutInner({ children, title }: { children: ReactNode; title: st
               {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
             <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-xl font-black text-foreground tracking-tight truncate">{title}</h1>
-          </div>
-
-          <div className="flex items-center gap-4 shrink-0">
-            <div className="hidden sm:flex flex-col text-right">
-              <span className="text-xs font-bold text-foreground">{displayName}</span>
-              <span className="text-[9px] font-bold text-emerald-800 bg-emerald-500/10 px-2 py-0.5 rounded-full uppercase w-fit ml-auto">Penjual (Seller)</span>
-            </div>
-            <button
-              onClick={() => {
-                signOut();
-                toast.success("Berhasil keluar dari akun.");
-              }}
-              title="Keluar dari akun"
-              className="grid h-10 w-10 place-items-center rounded-xl bg-white border border-border/40 text-destructive hover:bg-destructive/10 hover:border-destructive/20 transition-all duration-300 shadow-sm"
-            >
-              <LogOut className="h-4 w-4 text-destructive" />
-            </button>
           </div>
         </header>
         <div className="p-4 sm:p-8 flex-1 overflow-x-hidden overflow-y-auto">{children}</div>
