@@ -376,8 +376,6 @@ function ProductManagement() {
             )}
           </>
         )}
-        </>
-      )}
       </div>
 
       {/* Edit Product Dialog Modal */}
