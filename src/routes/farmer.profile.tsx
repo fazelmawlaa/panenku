@@ -133,6 +133,26 @@ function ProfilePage() {
         <div className="absolute inset-0 opacity-[0.015] pointer-events-none" style={{ backgroundImage: "radial-gradient(#1a2b1b 1.5px, transparent 1.5px)", backgroundSize: "28px 28px" }} />
         <div className="absolute top-[10%] right-[-10%] w-[30vw] h-[30vw] rounded-full bg-emerald-500/5 blur-[100px] pointer-events-none" />
         <div className="absolute bottom-[20%] left-[-10%] w-[35vw] h-[35vw] rounded-full bg-[#b4f05a]/5 blur-[100px] pointer-events-none" />
+
+        {/* Verification Warning Banner at the top */}
+        {!isVerified && (
+          <div className="bg-red-500/5 border border-red-500/20 rounded-[2rem] p-6 text-left flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h3 className="font-bold text-red-800 text-sm flex items-center gap-2">
+                <span>⚠️ Verifikasi Akun Penjual Tertunda</span>
+              </h3>
+              <p className="text-xs text-red-800/80 font-light leading-relaxed">
+                Untuk dapat mulai mendaftarkan produk hasil tani atau limbah pertanian di marketplace, silakan selesaikan verifikasi KTP Anda di halaman verifikasi.
+              </p>
+            </div>
+            <Button 
+              onClick={() => navigate({ to: "/farmer/verify" })}
+              className="rounded-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-6 py-2 shadow-sm shrink-0"
+            >
+              Lengkapi KTP Sekarang
+            </Button>
+          </div>
+        )}
           
         {/* Cover Photo and Centered Main Info Header card */}
         <div className="bg-white border border-border/40 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-soft transition-all duration-300">
@@ -204,25 +224,7 @@ function ProfilePage() {
           </div>
         </div>
 
-        {/* Verification Warning Banner */}
-        {!isVerified && (
-          <div className="bg-red-500/5 border border-red-500/20 rounded-[2rem] p-6 text-left flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="space-y-1">
-              <h3 className="font-bold text-red-800 text-sm flex items-center gap-2">
-                <span>⚠️ Verifikasi Akun Penjual Tertunda</span>
-              </h3>
-              <p className="text-xs text-red-800/80 font-light leading-relaxed">
-                Untuk dapat mulai mendaftarkan produk hasil tani atau limbah pertanian di marketplace, silakan selesaikan verifikasi KTP Anda di halaman verifikasi.
-              </p>
-            </div>
-            <Button 
-              onClick={() => navigate({ to: "/farmer/verify" })}
-              className="rounded-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-6 py-2 shadow-sm shrink-0"
-            >
-              Lengkapi KTP Sekarang
-            </Button>
-          </div>
-        )}
+
 
         <div className="space-y-8">
           {/* Main profile content */}

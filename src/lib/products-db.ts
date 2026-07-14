@@ -2,6 +2,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { type Product } from "@/lib/mock-data";
 
 export function mapDbProductToMock(db: any): Product {
+  let payMethodsStr = db.payment_methods || "";
+  let cleanDescription = db.description || "";
+  
+  if (!payMethodsStr && cleanDescription) {
+    const metaRegex = /\[PAYMENT_METHODS:\s*([^\]]+)\]/;
+    const match = cleanDescription.match(metaRegex);
+    if (match) {
+      payMethodsStr = match[1].trim();
+      cleanDescription = cleanDescription.replace(metaRegex, "").trim();
+    }
+  }
+
   return {
     id: db.id,
     name: db.name,
@@ -19,12 +31,12 @@ export function mapDbProductToMock(db: any): Product {
     rating: Number(db.rating),
     reviews: Number(db.reviews),
     image: db.image,
-    description: db.description,
-    paymentMethods: db.payment_methods 
-      ? db.payment_methods.split(",").map((m: string) => m.split(":")[0]) 
+    description: cleanDescription,
+    paymentMethods: payMethodsStr 
+      ? payMethodsStr.split(",").map((m: string) => m.split(":")[0]) 
       : ["ewallet", "va", "card"],
-    paymentAccounts: db.payment_methods 
-      ? db.payment_methods.split(",").reduce((acc: Record<string, string>, m: string) => {
+    paymentAccounts: payMethodsStr 
+      ? payMethodsStr.split(",").reduce((acc: Record<string, string>, m: string) => {
           const [method, account] = m.split(":");
           if (account) acc[method] = account;
           return acc;
@@ -117,8 +129,15 @@ export async function saveProductToSupabase(productData: {
   if (error) {
     if (error.code === "P0012" || error.message.includes("payment_methods")) {
       console.warn("Table does not have 'payment_methods' column. Retrying without it...");
-      const { payment_methods, ...rest } = productData;
-      const { error: retryError } = await supabase.from("products").insert([rest]);
+      const { payment_methods, description, ...rest } = productData;
+      const enrichedDescription = payment_methods 
+        ? `${description}\n\n[PAYMENT_METHODS: ${payment_methods}]` 
+        : description;
+      
+      const { error: retryError } = await supabase.from("products").insert([{
+        ...rest,
+        description: enrichedDescription
+      }]);
       if (!retryError) return;
       throw retryError;
     }
@@ -426,6 +445,10 @@ export async function updateProductInSupabase(id: string, updatedFields: {
     if (error.code === "P0012" || error.message.includes("payment_methods")) {
       console.warn("Table does not have 'payment_methods' column. Retrying update without it...");
       const { payment_methods, ...rest } = dbFormat;
+      if (updatedFields.payment_methods) {
+        rest.description = `${updatedFields.description}\n\n[PAYMENT_METHODS: ${updatedFields.payment_methods}]`;
+      }
+      
       const { error: retryError } = await supabase
         .from("products")
         .update(rest)

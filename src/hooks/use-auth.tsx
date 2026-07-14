@@ -107,50 +107,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRole("pembeli");
     }
 
-    // 2. Load profile safely
+    // 2. Load profile safely (Only querying columns that are guaranteed to exist to avoid 400 Bad Request)
     try {
       const { data: p, error } = await supabase
         .from("profiles")
-        .select("full_name, phone, address, experience, focus_area, certification, bio, ktp_number, ktp_photo, avatar_url")
+        .select("full_name, phone, address")
         .eq("id", userId)
         .maybeSingle();
 
       if (error || !p) {
-        // Fallback query without custom fields
-        const { data: stdP } = await supabase
-          .from("profiles")
-          .select("full_name, phone, address")
-          .eq("id", userId)
-          .maybeSingle();
-
-        if (stdP) {
-          setProfile({
-            full_name: stdP.full_name,
-            phone: stdP.phone,
-            address: stdP.address,
-            experience: "-",
-            focus_area: "-",
-            certification: "-",
-            bio: "-",
-            ktp_number: "-",
-            ktp_photo: "-",
-            avatar_url: ""
-          });
-        } else {
-          setProfile(null);
-        }
-      } else {
-        setProfile(p as any);
+        setProfile(null);
+        return;
       }
 
-      // Sync local storage state from profiles.address if it contains JSON config
-      const syncAddressVal = p?.address;
-      if (syncAddressVal && syncAddressVal.trim().startsWith("{")) {
+      // Initialize default profile fields
+      const parsedProfile: Profile = {
+        full_name: p.full_name,
+        phone: p.phone,
+        address: p.address,
+        experience: "-",
+        focus_area: "-",
+        certification: "-",
+        bio: "-",
+        ktp_number: "-",
+        ktp_photo: "-",
+        avatar_url: ""
+      };
+
+      // Sync local storage state and parse extra profile fields from profiles.address JSON
+      const addressVal = p.address;
+      if (addressVal && addressVal.trim().startsWith("{")) {
         try {
-          const config = JSON.parse(syncAddressVal);
+          const config = JSON.parse(addressVal);
+          
+          // Populate the parsedProfile with custom fields from JSON
+          if (config.ktp_number) parsedProfile.ktp_number = config.ktp_number;
+          if (config.ktp_photo) parsedProfile.ktp_photo = config.ktp_photo;
+          if (config.experience) parsedProfile.experience = config.experience;
+          if (config.certification) parsedProfile.certification = config.certification;
+          if (config.bio) parsedProfile.bio = config.bio;
+          if (config.focus_area) parsedProfile.focus_area = config.focus_area;
+          if (config.avatar_url) parsedProfile.avatar_url = config.avatar_url;
+
+          // Sync localStorage
           if (config.is_verified) {
             localStorage.setItem(`panenku_farmer_verified_${userId}`, "true");
           }
+          
           const biodata = {
             ktpNumber: config.ktp_number || "",
             ktpPhoto: config.ktp_photo || "",
@@ -166,67 +169,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             focusArea: config.focus_area || ""
           };
           localStorage.setItem(`panenku_farmer_biodata_${userId}`, JSON.stringify(biodata));
+          
           if (config.avatar_url) {
             localStorage.setItem(`panenku_avatar_${userId}`, config.avatar_url);
           }
         } catch (e) {
-          console.warn("Failed to sync profiles.address JSON to localStorage", e);
+          console.warn("Failed to parse profiles.address JSON config", e);
         }
       }
+
+      setProfile(parsedProfile);
     } catch (e) {
-      // Final fallback query
-      const { data: stdP } = await supabase
-        .from("profiles")
-        .select("full_name, phone, address")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (stdP) {
-        setProfile({
-          full_name: stdP.full_name,
-          phone: stdP.phone,
-          address: stdP.address,
-          experience: "-",
-          focus_area: "-",
-          certification: "-",
-          bio: "-",
-          ktp_number: "-",
-          ktp_photo: "-",
-          avatar_url: ""
-        });
-
-        // Also check if stdP.address is JSON to sync in catch block
-        if (stdP.address && stdP.address.trim().startsWith("{")) {
-          try {
-            const config = JSON.parse(stdP.address);
-            if (config.is_verified) {
-              localStorage.setItem(`panenku_farmer_verified_${userId}`, "true");
-            }
-            const biodata = {
-              ktpNumber: config.ktp_number || "",
-              ktpPhoto: config.ktp_photo || "",
-              ktpName: config.ktp_name || "",
-              ktpAddress: config.ktp_address || "",
-              birthPlaceDate: config.birth_place_date || "",
-              gender: config.gender || "",
-              phone: config.phone || "",
-              location: config.addressText || "",
-              experience: config.experience || "",
-              certification: config.certification || "",
-              bio: config.bio || "",
-              focusArea: config.focus_area || ""
-            };
-            localStorage.setItem(`panenku_farmer_biodata_${userId}`, JSON.stringify(biodata));
-            if (config.avatar_url) {
-              localStorage.setItem(`panenku_avatar_${userId}`, config.avatar_url);
-            }
-          } catch (err) {
-            console.warn("Failed to sync profiles.address JSON to localStorage in catch block", err);
-          }
-        }
-      } else {
-        setProfile(null);
-      }
+      console.error("Failed to load user profile:", e);
+      setProfile(null);
     }
   }
 

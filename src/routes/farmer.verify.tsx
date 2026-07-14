@@ -128,33 +128,16 @@ function FarmerVerificationPage() {
         console.warn("Failed to load/parse profiles address JSON during verify", err);
       }
 
-      // 2. Update database profile with KTP details (with mirror json backup)
+      // 2. Update database profile with KTP details (saved inside JSON address config)
       const { error } = await supabase
         .from("profiles")
         .update({
-          ktp_number: ktpNumber,
-          ktp_photo: ktpPhoto,
           full_name: ktpName, // Sync name with KTP name
           address: mergedAddressJson, // Sync address with merged config
         })
         .eq("id", user.id);
 
-      if (error) {
-        // If columns don't exist in Supabase schema cache yet, fall back to updating standard fields with JSON address
-        if (error.message.includes("column") || error.message.includes("cache") || error.message.includes("ktp_number")) {
-          const { error: fallbackError } = await supabase
-            .from("profiles")
-            .update({
-              full_name: ktpName,
-              address: mergedAddressJson,
-            })
-            .eq("id", user.id);
-
-          if (fallbackError) throw fallbackError;
-        } else {
-          throw error;
-        }
-      }
+      if (error) throw error;
 
       // 2. Persist metadata verification state locally for quick sync
       try {

@@ -88,65 +88,47 @@ function EditProfilePage() {
 
     setIsSaving(true);
     try {
-      // 1. Update Supabase profile table with all profile fields
+      // 1. Fetch current profile address to merge JSON metadata safely
+      let finalAddress = location;
+      try {
+        const { data: currentProfile } = await supabase
+          .from("profiles")
+          .select("address")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        let parsed: any = {};
+        if (currentProfile?.address && currentProfile.address.trim().startsWith("{")) {
+          parsed = JSON.parse(currentProfile.address);
+        } else if (currentProfile?.address) {
+          parsed.addressText = currentProfile.address;
+        }
+        
+        // Merge the edited profile fields
+        parsed.addressText = location;
+        parsed.experience = experience;
+        parsed.focus_area = focusArea;
+        parsed.certification = certification;
+        parsed.bio = bio;
+        parsed.phone = phone; // Include phone inside config too
+        parsed.avatar_url = avatarUrl;
+        
+        finalAddress = JSON.stringify(parsed);
+      } catch (e) {
+        console.warn("Failed to parse existing profile address config during save:", e);
+      }
+
+      // 2. Save only the standard columns
       const { error } = await supabase
         .from("profiles")
         .update({
           full_name: name,
           phone: phone,
-          address: location,
-          experience: experience,
-          focus_area: focusArea,
-          certification: certification,
-          bio: bio,
-          avatar_url: avatarUrl
+          address: finalAddress
         })
         .eq("id", user.id);
 
-      if (error) {
-        // If columns don't exist in cache yet, fallback to standard profile save
-        if (error.message.includes("column") || error.message.includes("cache") || error.message.includes("avatar_url")) {
-          
-          // Load current address column first to preserve consultation settings JSON
-          let finalAddress = location;
-          try {
-            const { data: currentProfile } = await supabase
-              .from("profiles")
-              .select("address")
-              .eq("id", user.id)
-              .maybeSingle();
-
-            let parsed: any = {};
-            if (currentProfile?.address && currentProfile.address.trim().startsWith("{")) {
-              parsed = JSON.parse(currentProfile.address);
-            }
-            
-            parsed.addressText = location;
-            parsed.experience = experience;
-            parsed.focus_area = focusArea;
-            parsed.certification = certification;
-            parsed.bio = bio;
-            parsed.phone = phone; // Include phone inside config too
-            
-            finalAddress = JSON.stringify(parsed);
-          } catch (e) {
-            console.warn("Failed to preserve consultations JSON in profile edit:", e);
-          }
-
-          const { error: fallbackError } = await supabase
-            .from("profiles")
-            .update({
-              full_name: name,
-              phone: phone,
-              address: finalAddress
-            })
-            .eq("id", user.id);
-          
-          if (fallbackError) throw fallbackError;
-        } else {
-          throw error;
-        }
-      }
+      if (error) throw error;
 
       // 2. Fallback backup to local storage
       try {
