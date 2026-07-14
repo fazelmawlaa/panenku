@@ -20,7 +20,16 @@ export function mapDbProductToMock(db: any): Product {
     reviews: Number(db.reviews),
     image: db.image,
     description: db.description,
-    paymentMethods: db.payment_methods ? db.payment_methods.split(",") : ["ewallet", "va", "card"],
+    paymentMethods: db.payment_methods 
+      ? db.payment_methods.split(",").map((m: string) => m.split(":")[0]) 
+      : ["ewallet", "va", "card"],
+    paymentAccounts: db.payment_methods 
+      ? db.payment_methods.split(",").reduce((acc: Record<string, string>, m: string) => {
+          const [method, account] = m.split(":");
+          if (account) acc[method] = account;
+          return acc;
+        }, {})
+      : {},
   };
 }
 
@@ -106,7 +115,7 @@ export async function saveProductToSupabase(productData: {
 }): Promise<void> {
   const { error } = await supabase.from("products").insert([productData]);
   if (error) {
-    if (error.code === "P0012" || error.message.includes("column \"payment_methods\" of relation \"products\" does not exist")) {
+    if (error.code === "P0012" || error.message.includes("payment_methods")) {
       console.warn("Table does not have 'payment_methods' column. Retrying without it...");
       const { payment_methods, ...rest } = productData;
       const { error: retryError } = await supabase.from("products").insert([rest]);
@@ -414,7 +423,7 @@ export async function updateProductInSupabase(id: string, updatedFields: {
     .eq("id", id);
     
   if (error) {
-    if (error.code === "P0012" || error.message.includes("column \"payment_methods\" of relation \"products\" does not exist")) {
+    if (error.code === "P0012" || error.message.includes("payment_methods")) {
       console.warn("Table does not have 'payment_methods' column. Retrying update without it...");
       const { payment_methods, ...rest } = dbFormat;
       const { error: retryError } = await supabase

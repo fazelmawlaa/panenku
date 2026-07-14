@@ -42,6 +42,9 @@ function AddProduct() {
     va: true,
     card: true,
   });
+  const [ewalletAccount, setEwalletAccount] = useState("");
+  const [vaAccount, setVaAccount] = useState("");
+  const [cardAccount, setCardAccount] = useState("");
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -138,7 +141,12 @@ function AddProduct() {
       
       let paymentMethodsStr = Object.entries(payMethods)
         .filter(([_, enabled]) => enabled)
-        .map(([key]) => key)
+        .map(([key]) => {
+          if (key === "ewallet") return `ewallet:${ewalletAccount}`;
+          if (key === "va") return `va:${vaAccount}`;
+          if (key === "card") return `card:${cardAccount}`;
+          return key;
+        })
         .join(",");
       if (!paymentMethodsStr) {
         paymentMethodsStr = "ewallet,va,card";
@@ -521,34 +529,81 @@ function AddProduct() {
 
                 <div>
                   <Label className="mb-2 block text-sm font-semibold text-gray-700">Metode Pembayaran yang Diterima</Label>
-                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 bg-gray-50/50 p-5 rounded-2xl border border-gray-200/40">
-                    <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
-                      <input 
-                        type="checkbox"
-                        checked={payMethods.ewallet}
-                        onChange={(e) => setPayMethods({ ...payMethods, ewallet: e.target.checked })}
-                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                      />
-                      E-Wallet
-                    </label>
-                    <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
-                      <input 
-                        type="checkbox"
-                        checked={payMethods.va}
-                        onChange={(e) => setPayMethods({ ...payMethods, va: e.target.checked })}
-                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                      />
-                      Virtual Account
-                    </label>
-                    <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
-                      <input 
-                        type="checkbox"
-                        checked={payMethods.card}
-                        onChange={(e) => setPayMethods({ ...payMethods, card: e.target.checked })}
-                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                      />
-                      Kartu Kredit/Debit
-                    </label>
+                  <div className="bg-gray-50/50 p-6 rounded-2xl border border-gray-200/40 space-y-4">
+                    {/* E-Wallet */}
+                    <div className="flex flex-col gap-2">
+                      <label className="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer select-none">
+                        <input 
+                          type="checkbox"
+                          checked={payMethods.ewallet}
+                          onChange={(e) => setPayMethods({ ...payMethods, ewallet: e.target.checked })}
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                        E-Wallet
+                      </label>
+                      {payMethods.ewallet && (
+                        <div className="pl-6 max-w-md">
+                          <Input
+                            type="text"
+                            value={ewalletAccount}
+                            onChange={(e) => setEwalletAccount(e.target.value)}
+                            placeholder="Contoh: DANA - 08123456789 (a.n. Fazel)"
+                            className="h-9 text-xs rounded-xl border-gray-200/80 bg-white"
+                            required
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Virtual Account */}
+                    <div className="flex flex-col gap-2">
+                      <label className="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer select-none">
+                        <input 
+                          type="checkbox"
+                          checked={payMethods.va}
+                          onChange={(e) => setPayMethods({ ...payMethods, va: e.target.checked })}
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                        Virtual Account
+                      </label>
+                      {payMethods.va && (
+                        <div className="pl-6 max-w-md">
+                          <Input
+                            type="text"
+                            value={vaAccount}
+                            onChange={(e) => setVaAccount(e.target.value)}
+                            placeholder="Contoh: Mandiri VA - 8961234567890"
+                            className="h-9 text-xs rounded-xl border-gray-200/80 bg-white"
+                            required
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Kartu Kredit/Debit */}
+                    <div className="flex flex-col gap-2">
+                      <label className="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer select-none">
+                        <input 
+                          type="checkbox"
+                          checked={payMethods.card}
+                          onChange={(e) => setPayMethods({ ...payMethods, card: e.target.checked })}
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                        Kartu Kredit/Debit
+                      </label>
+                      {payMethods.card && (
+                        <div className="pl-6 max-w-md">
+                          <Input
+                            type="text"
+                            value={cardAccount}
+                            onChange={(e) => setCardAccount(e.target.value)}
+                            placeholder="Contoh: BCA - 1234567890 (a.n. Fazel)"
+                            className="h-9 text-xs rounded-xl border-gray-200/80 bg-white"
+                            required
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

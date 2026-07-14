@@ -77,6 +77,9 @@ function WasteDashboard() {
     va: true,
     card: true,
   });
+  const [editEwalletAccount, setEditEwalletAccount] = useState("");
+  const [editVaAccount, setEditVaAccount] = useState("");
+  const [editCardAccount, setEditCardAccount] = useState("");
 
   const handleEditClick = (w: any) => {
     setEditingProduct(w);
@@ -93,6 +96,9 @@ function WasteDashboard() {
       va: pMethods.includes("va"),
       card: pMethods.includes("card"),
     });
+    setEditEwalletAccount(w.paymentAccounts?.ewallet || "");
+    setEditVaAccount(w.paymentAccounts?.va || "");
+    setEditCardAccount(w.paymentAccounts?.card || "");
   };
 
   const handleEditSave = async (e: React.FormEvent) => {
@@ -101,7 +107,12 @@ function WasteDashboard() {
     try {
       let paymentMethodsStr = Object.entries(editPayMethods)
         .filter(([_, enabled]) => enabled)
-        .map(([key]) => key)
+        .map(([key]) => {
+          if (key === "ewallet") return `ewallet:${editEwalletAccount}`;
+          if (key === "va") return `va:${editVaAccount}`;
+          if (key === "card") return `card:${editCardAccount}`;
+          return key;
+        })
         .join(",");
       if (!paymentMethodsStr) {
         paymentMethodsStr = "ewallet,va,card";
@@ -348,34 +359,75 @@ function WasteDashboard() {
 
               <div>
                 <Label className="text-xs font-bold text-gray-700">Metode Pembayaran yang Diterima</Label>
-                <div className="grid grid-cols-2 gap-3 bg-gray-50/50 p-4 rounded-xl border border-gray-200 mt-1">
-                  <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
-                    <input 
-                      type="checkbox"
-                      checked={editPayMethods.ewallet}
-                      onChange={(e) => setEditPayMethods({ ...editPayMethods, ewallet: e.target.checked })}
-                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    E-Wallet
-                  </label>
-                  <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
-                    <input 
-                      type="checkbox"
-                      checked={editPayMethods.va}
-                      onChange={(e) => setEditPayMethods({ ...editPayMethods, va: e.target.checked })}
-                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    Virtual Account
-                  </label>
-                  <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
-                    <input 
-                      type="checkbox"
-                      checked={editPayMethods.card}
-                      onChange={(e) => setEditPayMethods({ ...editPayMethods, card: e.target.checked })}
-                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    Kartu Kredit/Debit
-                  </label>
+                <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-200 mt-1 space-y-3">
+                  {/* E-Wallet */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                      <input 
+                        type="checkbox"
+                        checked={editPayMethods.ewallet}
+                        onChange={(e) => setEditPayMethods({ ...editPayMethods, ewallet: e.target.checked })}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      E-Wallet
+                    </label>
+                    {editPayMethods.ewallet && (
+                      <Input
+                        type="text"
+                        value={editEwalletAccount}
+                        onChange={(e) => setEditEwalletAccount(e.target.value)}
+                        placeholder="Contoh: DANA - 08123456789"
+                        className="h-8 text-xs rounded-lg border-gray-200 bg-white"
+                        required
+                      />
+                    )}
+                  </div>
+
+                  {/* Virtual Account */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                      <input 
+                        type="checkbox"
+                        checked={editPayMethods.va}
+                        onChange={(e) => setEditPayMethods({ ...editPayMethods, va: e.target.checked })}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      Virtual Account
+                    </label>
+                    {editPayMethods.va && (
+                      <Input
+                        type="text"
+                        value={editVaAccount}
+                        onChange={(e) => setEditVaAccount(e.target.value)}
+                        placeholder="Contoh: Mandiri VA - 8961234567890"
+                        className="h-8 text-xs rounded-lg border-gray-200 bg-white"
+                        required
+                      />
+                    )}
+                  </div>
+
+                  {/* Kartu Kredit/Debit */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                      <input 
+                        type="checkbox"
+                        checked={editPayMethods.card}
+                        onChange={(e) => setEditPayMethods({ ...editPayMethods, card: e.target.checked })}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      Kartu Kredit/Debit
+                    </label>
+                    {editPayMethods.card && (
+                      <Input
+                        type="text"
+                        value={editCardAccount}
+                        onChange={(e) => setEditCardAccount(e.target.value)}
+                        placeholder="Contoh: BCA - 1234567890"
+                        className="h-8 text-xs rounded-lg border-gray-200 bg-white"
+                        required
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

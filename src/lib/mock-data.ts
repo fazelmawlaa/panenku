@@ -17,8 +17,8 @@ export interface Product {
   rating: number;
   reviews: number;
   image: string;
-  description: string;
   paymentMethods?: string[];
+  paymentAccounts?: Record<string, string>;
 }
 
 const img = (q: string) =>

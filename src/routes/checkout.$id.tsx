@@ -883,22 +883,40 @@ function Checkout() {
                 <RadioGroup value={pay} onValueChange={setPay} className="space-y-2.5">
                   {filteredPayments.map((m) => {
                     const Icon = m.icon;
+                    const farmerAccounts = checkoutItems.map(item => {
+                      const acc = item.paymentAccounts?.[m.v];
+                      return acc ? { farmer: item.farmer, account: acc } : null;
+                    }).filter(Boolean) as { farmer: string; account: string }[];
+
                     return (
-                      <label
-                        key={m.v}
-                        className={`flex items-center gap-4 rounded-2xl border p-4 cursor-pointer transition ${
-                          pay === m.v ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "border-border hover:bg-muted/40"
-                        }`}
-                      >
-                        <RadioGroupItem value={m.v} />
-                        <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary shrink-0">
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-semibold">{m.t}</div>
-                          <div className="text-xs text-muted-foreground">{m.d}</div>
-                        </div>
-                      </label>
+                      <div key={m.v} className="space-y-2">
+                        <label
+                          className={`flex items-center gap-4 rounded-2xl border p-4 cursor-pointer transition ${
+                            pay === m.v ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "border-border hover:bg-muted/40"
+                          }`}
+                        >
+                          <RadioGroupItem value={m.v} />
+                          <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary shrink-0">
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold">{m.t}</div>
+                            <div className="text-xs text-muted-foreground">{m.d}</div>
+                          </div>
+                        </label>
+
+                        {pay === m.v && farmerAccounts.length > 0 && (
+                          <div className="ml-14 p-3.5 bg-[#e9eae6]/30 border border-border/40 rounded-2xl space-y-2 text-xs">
+                            <div className="font-bold text-foreground/90">Rekening Tujuan Penjual:</div>
+                            {farmerAccounts.map((fa, i) => (
+                              <div key={i} className="flex justify-between items-center gap-4 py-1 border-b border-border/10 last:border-0 font-medium">
+                                <span className="text-muted-foreground">{fa.farmer}</span>
+                                <span className="font-mono text-primary text-sm font-extrabold select-all bg-white px-2 py-0.5 rounded border border-primary/10">{fa.account}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </RadioGroup>
