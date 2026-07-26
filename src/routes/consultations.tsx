@@ -12,7 +12,7 @@ import fotoPetani from "@/assets/foto_petani.jpg";
 import {
   Search, Send, X, Star, ArrowLeft, Loader2,
   MessageSquare, Calendar, Clock, Award, ShieldCheck,
-  ChevronDown, ChevronUp
+  ChevronDown, ChevronUp, Briefcase
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -99,11 +99,17 @@ function ConsultationsPage() {
   useEffect(() => {
     const loadFarmers = async () => {
       setIsLoadingFarmers(true);
-      const data = await fetchRegisteredFarmers();
-      // Filter out mentors who closed consultation
-      const openMentors = data.filter(f => f.isOpenForConsultation !== false);
-      setDbFarmers(openMentors);
-      setIsLoadingFarmers(false);
+      try {
+        const data = await fetchRegisteredFarmers();
+        console.log("All fetched mentors from DB:", data);
+        const openMentors = data.filter(f => f.isOpenForConsultation !== false);
+        console.log("Filtered open mentors:", openMentors);
+        setDbFarmers(openMentors);
+      } catch (err) {
+        console.error("Error in loadFarmers:", err);
+      } finally {
+        setIsLoadingFarmers(false);
+      }
     };
     loadFarmers();
   }, []);
@@ -339,12 +345,14 @@ function ConsultationsPage() {
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-0.5 font-light">{m.specialty}</p>
 
-                                <div className="flex items-center gap-2 mt-2 select-none">
-                                  <span className="text-[9px] text-muted-foreground bg-secondary/50 rounded px-1.5 py-0.5 flex items-center gap-1">
-                                    💼 {m.experience}
+                                <div className="flex flex-wrap items-center gap-1.5 mt-2.5 select-none">
+                                  <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50/60 border border-emerald-100/80 rounded-full px-2.5 py-0.5 flex items-center gap-1">
+                                    <Briefcase className="h-3 w-3 text-emerald-600 shrink-0" />
+                                    <span>{m.experience}</span>
                                   </span>
-                                  <span className="text-[9px] text-muted-foreground bg-secondary/50 rounded px-1.5 py-0.5 flex items-center gap-0.5">
-                                    ⭐ {m.satisfaction}
+                                  <span className="text-[10px] font-semibold text-amber-800 bg-amber-50/60 border border-amber-100/80 rounded-full px-2.5 py-0.5 flex items-center gap-1">
+                                    <Star className="h-3 w-3 fill-amber-500 text-amber-500 shrink-0" />
+                                    <span>{m.satisfaction} Kepuasan</span>
                                   </span>
                                 </div>
                               </div>
@@ -497,9 +505,14 @@ function ConsultationsPage() {
                   const pm = PAYMENT_METHODS.find(p => p.id === selectedPaymentMethod);
                   if (!pm) return null;
 
-                  const creds = (activeMentor.paymentDetails && activeMentor.paymentDetails[selectedPaymentMethod])
-                    || (activeMentor.bankDetails?.name === selectedPaymentMethod ? activeMentor.bankDetails : null)
-                    || { number: activeMentor.bankDetails?.number || "123-456-7890", holder: activeMentor.bankDetails?.holder || activeMentor.name };
+                  // Prioritise per-method details set by the farmer, then fall back to bankDetails if it matches
+                  const detailEntry = activeMentor.paymentDetails?.[selectedPaymentMethod];
+                  const matchesBankDetails = activeMentor.bankDetails?.name === selectedPaymentMethod;
+                  const creds = detailEntry?.number
+                    ? detailEntry
+                    : matchesBankDetails && activeMentor.bankDetails?.number
+                      ? { number: activeMentor.bankDetails.number, holder: activeMentor.bankDetails.holder }
+                      : null;
 
                   return (
                     <div className="bg-secondary/40 border border-border/20 rounded-2xl p-4 space-y-2 text-xs text-left">
@@ -509,22 +522,26 @@ function ConsultationsPage() {
                           Rincian Pembayaran {pm.name}
                         </span>
                       </div>
-                      <div className="space-y-1 font-sans text-left">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Metode:</span>
-                          <span className="font-bold text-foreground">{pm.name}</span>
+                      {creds ? (
+                        <div className="space-y-1 font-sans text-left">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Metode:</span>
+                            <span className="font-bold text-foreground">{pm.name}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              {pm.type === "bank" ? "Nomor Rekening:" : "Nomor HP / Akun:"}
+                            </span>
+                            <span className="font-bold text-primary select-all">{creds.number}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Atas Nama:</span>
+                            <span className="font-bold text-foreground">{creds.holder}</span>
+                          </div>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">
-                            {pm.type === "bank" ? "Nomor Rekening:" : "Nomor HP / Akun:"}
-                          </span>
-                          <span className="font-bold text-primary select-all">{creds.number}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Atas Nama:</span>
-                          <span className="font-bold text-foreground">{creds.holder}</span>
-                        </div>
-                      </div>
+                      ) : (
+                        <p className="text-muted-foreground text-xs">Rincian rekening belum diisi oleh petani. Hubungi mentor untuk konfirmasi pembayaran.</p>
+                      )}
                     </div>
                   );
                 })()}

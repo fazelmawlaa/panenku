@@ -191,7 +191,7 @@ function FarmerDash() {
               </div>
             </div>
             <h1 className="font-['Plus_Jakarta_Sans',sans-serif] text-2xl sm:text-4xl font-extrabold text-foreground tracking-tight mt-1.5 leading-tight">
-              {displayName} <span className="font-['Playfair_Display',serif] italic font-light text-primary">PANENKU</span>
+              {displayName}
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground font-light mt-2 leading-relaxed">Kelola pasokan panen pre-order, catat sirkular limbah tani, dan pantau keuangan Anda secara transparan.</p>
           </div>

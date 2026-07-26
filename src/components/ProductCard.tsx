@@ -72,8 +72,8 @@ export function ProductCard({ product }: { product: Product }) {
           oleh <span className="font-semibold text-foreground/75">{product.farmer}</span>
         </div>
 
-        {/* Stock progress bar for preorder/waste */}
-        {(product.type === "preorder" || product.type === "waste") && product.ordered !== undefined && (
+        {/* Stock progress bar */}
+        {product.ordered !== undefined && (
           <div className="mt-0.5">
             <div className="flex justify-between text-[9px] sm:text-[10px] mb-1 font-semibold">
               <span className={isOutOfStock ? "text-red-500" : "text-emerald-600"}>

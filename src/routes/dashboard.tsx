@@ -91,7 +91,7 @@ function PembeliDashboard() {
         // Fetch profiles of these top 3 farmers from Supabase
         const { data: profiles, error } = await supabase
           .from("profiles")
-          .select("id, full_name, avatar_url, address")
+          .select("id, full_name, address")
           .in("id", top3Ids);
 
         if (error) {
@@ -101,16 +101,18 @@ function PembeliDashboard() {
           // Map profiles to farmer display data
           const mapped = profiles.map((p: any) => {
             let loc = p.address || "Indonesia";
+            let avatarUrl = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&auto=format&fit=crop&q=60";
             if (p.address && p.address.trim().startsWith("{")) {
               try {
                 const parsed = JSON.parse(p.address);
                 loc = parsed.addressText || "Indonesia";
+                if (parsed.avatar_url) avatarUrl = parsed.avatar_url;
               } catch (e) {}
             }
             return {
               id: p.id,
               name: p.full_name || "Petani PANENKU",
-              image: p.avatar_url || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&auto=format&fit=crop&q=60", // fallback avatar
+              image: avatarUrl,
               location: loc,
               rating: 4.8,
               count: farmerCounts[p.id] || 0

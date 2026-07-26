@@ -73,14 +73,36 @@ function ProfilePage() {
       return "-";
     };
 
+    // Parse the address JSON metadata if it exists
+    let parsedAddressConfig: any = {};
+    if (profile?.address && profile.address.trim().startsWith("{")) {
+      try {
+        parsedAddressConfig = JSON.parse(profile.address);
+      } catch (e) {}
+    }
+
+    const getVal = (dbVal: any, lsKey: string) => {
+      if (dbVal && dbVal !== "-") return dbVal;
+      if (lsBio[lsKey] && lsBio[lsKey] !== "-" && lsBio[lsKey] !== "—") return lsBio[lsKey];
+      return "-";
+    };
+
     setName(profile?.full_name || user.email?.split("@")[0] || "Penjual Mitra");
-    setPhone(val(profile?.phone, "phone"));
-    setLocation(val(profile?.address, "location"));
-    setExperience(val(profile?.experience, "experience"));
-    setFocusArea(val(profile?.focus_area, "focusArea"));
-    setCertification(val(profile?.certification, "certification"));
-    setBio(val(profile?.bio, "bio"));
-    setAvatarUrl(profile?.avatar_url || localStorage.getItem(`panenku_avatar_${user.id}`) || "");
+    setPhone(profile?.phone || lsBio.phone || "-");
+    
+    // Address text
+    const cleanLocation = parsedAddressConfig.addressText || (profile?.address && !profile.address.trim().startsWith("{") ? profile.address : null);
+    setLocation(cleanLocation || lsBio.location || "-");
+
+    // Retrieve fields from address JSON config
+    setExperience(getVal(parsedAddressConfig.experience, "experience"));
+    setFocusArea(getVal(parsedAddressConfig.focus_area, "focusArea"));
+    setCertification(getVal(parsedAddressConfig.certification, "certification"));
+    setBio(getVal(parsedAddressConfig.bio, "bio"));
+
+    // Avatar
+    const realAvatar = parsedAddressConfig.avatar_url || profile?.avatar_url || localStorage.getItem(`panenku_avatar_${user.id}`) || "";
+    setAvatarUrl(realAvatar);
 
     let isKtpVerifiedFromDbAddress = false;
     if (profile?.address && profile.address.trim().startsWith("{")) {

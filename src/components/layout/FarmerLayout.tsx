@@ -67,8 +67,8 @@ function FarmerLayoutInner({ children, title }: { children: ReactNode; title: st
     <div className="min-h-screen bg-[#f4f5f1] font-['Inter',sans-serif] relative overflow-x-hidden">
       {/* DEKORASI BACKGROUND TIPIS (BACKGROUND PATTERNS & BLOBS) */}
       <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: "radial-gradient(#1a2b1b 1.5px, transparent 1.5px)", backgroundSize: "28px 28px" }} />
-      <div className="absolute top-[5%] right-[-5%] w-[35vw] h-[35vw] rounded-full bg-emerald-500/10 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[10%] left-[20%] w-[40vw] h-[40vw] rounded-full bg-[#b4f05a]/50 opacity-[0.07] blur-[130px] pointer-events-none" />
+      <div className="absolute top-[5%] right-[-5%] w-[35vw] h-[35vw] rounded-full bg-emerald-500/10 blur-[60px] pointer-events-none" />
+      <div className="absolute bottom-[10%] left-[20%] w-[40vw] h-[40vw] rounded-full bg-[#b4f05a]/50 opacity-[0.07] blur-[70px] pointer-events-none" />
 
       {/* Sidebar */}
       <aside

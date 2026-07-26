@@ -36,7 +36,7 @@ function ProductManagement() {
     setIsLoading(true);
     try {
       const data = await fetchProductsFromSupabase(true);
-      const filtered = data.filter((p) => p.farmerId === user.id && p.type !== "waste");
+      const filtered = data.filter((p) => p.farmerId === user.id && p.type !== "waste" && p.type !== "consultation");
       setList(filtered);
       // Archived products are those with stock === 0
       setArchivedIds(filtered.filter(p => p.stock === 0).map(p => p.id));

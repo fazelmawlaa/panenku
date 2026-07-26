@@ -49,17 +49,42 @@ function ProductDetail() {
   const [newComment, setNewComment] = useState("");
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
-  // Load reviews on mount
-  const fetchReviews = async () => {
+  // Load latest product details and reviews on mount
+  const fetchDetailsAndReviews = async () => {
+    // 1. Fetch latest product details from Supabase to bypass routing cache
+    try {
+      const updated = await fetchProductDetail(initialProduct.id);
+      if (updated?.product) {
+        setProduct(updated.product);
+      }
+    } catch (e) {
+      console.warn("Failed to refetch latest product details:", e);
+    }
+
+    // 2. Fetch reviews
     setLoadingReviews(true);
-    const data = await fetchReviewsForProduct(p.id);
+    const data = await fetchReviewsForProduct(initialProduct.id);
     setReviewsList(data);
     setLoadingReviews(false);
   };
 
   useEffect(() => {
-    fetchReviews();
-  }, [p.id]);
+    fetchDetailsAndReviews();
+
+    // Refresh product data when user navigates back to this page (fixes stale stock bar)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchDetailsAndReviews();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", fetchDetailsAndReviews);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", fetchDetailsAndReviews);
+    };
+  }, [initialProduct.id]);
 
   const handleSendReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,11 +102,7 @@ function ProductDetail() {
       setNewRating(5);
 
       // Reload reviews and updated rating details
-      fetchReviews();
-      const updated = await fetchProductDetail(p.id);
-      if (updated?.product) {
-        setProduct(updated.product);
-      }
+      fetchDetailsAndReviews();
     } catch (err: any) {
       toast.error(err.message || "Gagal mengirim ulasan.");
     } finally {
@@ -161,7 +182,7 @@ function ProductDetail() {
             {(() => {
               const remaining = p.ordered !== undefined ? p.stock - p.ordered : p.stock;
               const isOutOfStock = remaining <= 0;
-              const showBar = (p.type === "preorder" || p.type === "waste") && p.ordered !== undefined;
+              const showBar = true;
               return (
                 <div className="bg-white border border-border/30 rounded-2xl px-5 py-4 shadow-sm space-y-3">
                   {/* Harga */}

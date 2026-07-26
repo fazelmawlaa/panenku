@@ -147,15 +147,15 @@
 }
 
 @utility glass-card {
-  background: color-mix(in oklab, white 70%, transparent);
-  backdrop-filter: blur(18px) saturate(140%);
+  background: color-mix(in oklab, white 75%, transparent);
+  backdrop-filter: blur(10px);
   border: 1px solid color-mix(in oklab, white 60%, transparent);
   box-shadow: var(--shadow-soft);
 }
 
 @utility glass-dark {
   background: color-mix(in oklab, var(--leaf) 8%, white 92%);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(12px);
   border: 1px solid color-mix(in oklab, var(--leaf) 18%, transparent);
 }
 

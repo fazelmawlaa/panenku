@@ -102,15 +102,30 @@ function ChatPage() {
         if (role !== "petani") {
           const farmerIds = Array.from(new Set(consultOrders.map(o => o.farmer_id).filter(Boolean))) as string[];
 
-          let profilesMap = new Map<string, any>();
+           let profilesMap = new Map<string, any>();
           if (farmerIds.length > 0) {
             const { data: farmerProfiles } = await supabase
               .from("profiles")
-              .select("id, full_name, avatar_url, focus_area, bio")
+              .select("id, full_name, address")
               .in("id", farmerIds);
             
             if (farmerProfiles) {
-              farmerProfiles.forEach(p => profilesMap.set(p.id, p));
+              farmerProfiles.forEach(p => {
+                let avatarUrl = "";
+                let focusArea = "";
+                if (p.address && p.address.trim().startsWith("{")) {
+                  try {
+                    const parsed = JSON.parse(p.address);
+                    avatarUrl = parsed.avatar_url || "";
+                    focusArea = parsed.expertise || parsed.focus_area || "";
+                  } catch (e) {}
+                }
+                profilesMap.set(p.id, {
+                  ...p,
+                  avatar_url: avatarUrl,
+                  focus_area: focusArea
+                });
+              });
             }
           }
 
@@ -152,15 +167,45 @@ function ChatPage() {
               specialtyOrRole: farmerProfile?.focus_area || "Petani Mentor",
               lastMessageText: lastMsgText,
               lastMessageTime: lastMsgTime,
-              lastMessageTimestamp,
+              lastMessageTimestamp: lastMsgTimestamp,
               topic: topicText,
-              date: o.date
+              date: o.date,
+              status: o.status
             });
           });
         } else {
           // If I am a farmer, each order represents a student (buyer)
+          const buyerIds = [...new Set(consultOrders.map(o => o.user_id).filter(Boolean))];
+          let buyerProfilesMap: Record<string, { name?: string; avatar?: string }> = {};
+
+          if (buyerIds.length > 0) {
+            const { data: buyers } = await supabase
+              .from("profiles")
+              .select("id, full_name, address")
+              .in("id", buyerIds);
+
+            if (buyers) {
+              buyers.forEach(b => {
+                let avatar = b.avatar_url || "";
+                if (!avatar && b.address && b.address.trim().startsWith("{")) {
+                  try {
+                    const parsed = JSON.parse(b.address);
+                    avatar = parsed.avatar_url || "";
+                  } catch (_) {}
+                }
+                buyerProfilesMap[b.id] = {
+                  name: b.full_name || undefined,
+                  avatar: avatar || undefined
+                };
+              });
+            }
+          }
+
           consultOrders.forEach(o => {
             const bId = o.user_id;
+            const profileInfo = buyerProfilesMap[bId] || {};
+            const studentName = profileInfo.name || o.buyer_name || "Calon Petani";
+            const avatar = profileInfo.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(studentName)}`;
 
             // Fetch last message from localStorage
             const storageKey = `panenku_chat_${user.id}_${bId}`;
@@ -191,14 +236,15 @@ function ChatPage() {
 
             chatMap.set(bId, {
               otherId: bId,
-              otherName: o.buyer_name || "Calon Petani",
-              otherAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+              otherName: studentName,
+              otherAvatar: avatar,
               specialtyOrRole: "Buyer / Calon Petani",
               lastMessageText: lastMsgText,
               lastMessageTime: lastMsgTime,
-              lastMessageTimestamp,
+              lastMessageTimestamp: lastMsgTimestamp,
               topic: topicText,
-              date: o.date
+              date: o.date,
+              status: o.status
             });
           });
         }
@@ -522,17 +568,24 @@ function ChatPage() {
                 </div>
 
                 {/* Messages Input footer */}
-                <form onSubmit={handleSendMessage} className="p-4 border-t border-border/20 flex gap-2 shrink-0 bg-white items-center">
-                  <Input
-                    value={typedMessage}
-                    onChange={(e) => setTypedMessage(e.target.value)}
-                    placeholder={`Ketik pesan obrolan...`}
-                    className="rounded-full flex-1 bg-secondary/50 font-light text-xs h-10 px-4 border-transparent focus-visible:ring-primary/20"
-                  />
-                  <Button type="submit" size="icon" className="rounded-full h-10 w-10 shrink-0 shadow-soft">
-                    <Send className="h-4 w-4" />
-                  </Button>
-                </form>
+                {activeChat.status === "Completed" ? (
+                  <div className="p-4 border-t border-border/20 bg-secondary/35 text-center text-xs text-muted-foreground font-semibold flex items-center justify-center gap-2 shrink-0">
+                    <XCircle className="h-4 w-4 text-muted-foreground" />
+                    <span>Sesi konsultasi ini telah diakhiri. Obrolan ditutup.</span>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSendMessage} className="p-4 border-t border-border/20 flex gap-2 shrink-0 bg-white items-center">
+                    <Input
+                      value={typedMessage}
+                      onChange={(e) => setTypedMessage(e.target.value)}
+                      placeholder={`Ketik pesan obrolan...`}
+                      className="rounded-full flex-1 bg-secondary/50 font-light text-xs h-10 px-4 border-transparent focus-visible:ring-primary/20"
+                    />
+                    <Button type="submit" size="icon" className="rounded-full h-10 w-10 shrink-0 shadow-soft">
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </form>
+                )}
               </>
             ) : (
               /* No Active Chat Room placeholder */

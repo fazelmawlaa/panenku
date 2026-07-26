@@ -62,6 +62,19 @@ function Catalog() {
       setIsLoading(false);
     };
     loadProducts();
+
+    // Refresh products whenever the user navigates back to this page (fixes stale stock bars)
+    // Only on actual tab visibility change — not on every window focus click
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        loadProducts();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
